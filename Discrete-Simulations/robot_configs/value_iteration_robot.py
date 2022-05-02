@@ -7,6 +7,8 @@ tile_location_value = {}
 experiences = []
 
 
+# TODO: compute the reward on the move and store it in the list of experiences
+#  like so: [(old_location, reward, new_location)]
 def robot_epoch(robot):
     # Get the possible values (dirty/clean) of the tiles we can end up at after a move:
     possible_tiles = robot.possible_tiles_after_move()  # e.g.: {(0, -1): -1.0, (1, 0): 1.0, (0, 1): 1.0, (-1, 0): -1.0}
