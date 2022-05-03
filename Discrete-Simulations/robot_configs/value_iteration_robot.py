@@ -1,36 +1,26 @@
 import random
+import copy
+import numpy as np
+#DEFAULT_TILE_VALUE = 0
+
+#tile_location_value = {}
+#experiences = []
 
 
-DEFAULT_TILE_VALUE = 0
 
-tile_location_value = {}
-experiences = []
-
-
-# TODO: compute the reward on the move and store it in the list of experiences
-#  like so: [(old_location, reward, new_location)]
 def robot_epoch(robot):
-    # Get the possible values (dirty/clean) of the tiles we can end up at after a move:
-    possible_tiles = robot.possible_tiles_after_move()  # e.g.: {(0, -1): -1.0, (1, 0): 1.0, (0, 1): 1.0, (-1, 0): -1.0}
-    # Get rid of any tiles outside a 1 step range (we don't care about our vision for this algorithm):
-    possible_tiles = {move: possible_tiles[move] for move in possible_tiles if abs(move[0]) < 2 and abs(move[1]) < 2}
 
-    values_around = []
-    # Assign the default value to the newly seen tiles
-    for tile in possible_tiles.keys():
-        tile_location = add_coords(tile, robot.pos)
-
-        if tile_location not in tile_location_value.keys():
-            tile_location_value[tile_location] = DEFAULT_TILE_VALUE
-
-    for tile in possible_tiles.keys():
-        values_around.append(tile_location_value[add_coords(tile, robot.pos)])
-
-    maximum_tile_index = values_around.index(max(values_around))
-    best_tile = list(possible_tiles.keys())[maximum_tile_index]
-
+    possible_moves = list(robot.dirs.values())
+    # Init empty value grid
+    value_init = np.zeros_like(robot.grid.cells)
+    # Calculate the values via value iteration
+    value_grid = value_iteration(robot,value_init,iter_limit,seed)
+    # Find action values
+    action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
+    # Find best move
+    move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
-    new_orient = get_orientation_by_move(robot, move=best_tile)
+    new_orient = get_orientation_by_move(robot, move=move)
 
     move_robot(robot, new_orient)
 
@@ -71,9 +61,11 @@ def robot_epoch(robot):
 def get_move_by_label(tiles, label):
     return list(tiles.keys())[list(tiles.values()).index(label)]
 
+
 # Returns one of the directions (e.g. 'n') given the move
 def get_orientation_by_move(robot, move):
     return list(robot.dirs.keys())[list(robot.dirs.values()).index(move)]
+
 
 def move_robot(robot, direction):
     # Orient ourselves towards the dirty tile:
@@ -86,3 +78,52 @@ def move_robot(robot, direction):
 
 def add_coords(c1, c2):
     return (c1[0]+c2[0], c1[1]+c2[1])
+
+
+# Given an initial position and move direction calculate the next position
+def coordinate_finder(pos,direction):
+    if direction == 'n':
+        return (pos[0],pos[1]-1)
+    elif direction == 's':
+        return (pos[0],pos[1]+1)
+    elif direction == 'e':
+        return (pos[0]+1,pos[1])
+    elif direction == 'w':
+        return (pos[0]-1,pos[1])
+
+
+def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
+
+    #Using theta in the actual check breaks the code for me for some reason? Thats why its not used.
+    iter = 0
+    while True:
+        grid_cells = copy.deepcopy(robot.grid.cells)
+        grid_cells[robot.pos] = 0
+        n_rows = robot.grid.n_rows
+        n_cols = robot.grid.n_cols
+        max_diff = 0
+        for x in range(1,n_cols-1):
+            for y in range(1,n_rows-1):
+                # Robot cant visit negative tiles
+                if grid_cells[x,y] in [-1,-2,-3]:
+                    continue
+                # Calculate values (action return + next state value)
+                # TODO: Probability calculations
+                action_values = {'n':grid_cells[x,y-1]+gamma*vals[x,y-1],
+                                 's':grid_cells[x,y+1]+gamma*vals[x,y+1],
+                                 'e':grid_cells[x+1,y]+gamma*vals[x+1,y],
+                                 'w':grid_cells[x-1,y]+gamma*vals[x-1,y]}
+                # Get the orientation of the best action
+                best_action = max(action_values.keys(), key=(lambda key: action_values[key]))
+                # Find next position after action
+                next_pos = coordinate_finder((x,y),best_action)
+                # Val += action_return + val_of_next_pos
+                difference = grid_cells[next_pos] + gamma*vals[next_pos] - vals[x,y]
+                vals[x,y] = grid_cells[next_pos] + gamma*vals[next_pos]
+                if difference > max_diff:
+                    max_diff = difference
+        if max_diff < 0.01 and iter > 0:
+            break
+        iter+=1
+    # Return converged value grid
+    return vals
