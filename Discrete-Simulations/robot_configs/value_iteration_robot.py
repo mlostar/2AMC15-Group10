@@ -14,7 +14,7 @@ def robot_epoch(robot):
     # Init empty value grid
     value_init = np.zeros_like(robot.grid.cells)
     # Calculate the values via value iteration
-    value_grid = value_iteration(robot,value_init,iter_limit,seed)
+    value_grid = value_iteration(robot,value_init)
     # Find action values
     action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
     # Find best move
