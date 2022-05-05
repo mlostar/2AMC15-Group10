@@ -7,16 +7,16 @@ import numpy as np
 #experiences = []
 
 
-
-def robot_epoch(robot):
+def robot_epoch(robot, gamma=0.3):
 
     possible_moves = list(robot.dirs.values())
     # Init empty value grid
     value_init = np.zeros_like(robot.grid.cells)
     # Calculate the values via value iteration
-    value_grid = value_iteration(robot,value_init)
+    value_grid = value_iteration(robot, value_init, gamma=gamma)
     # Find action values
-    action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
+    action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)]
+                     for move in possible_moves]
     # Find best move
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
@@ -76,20 +76,21 @@ def move_robot(robot, direction):
     # Move:
     robot.move()
 
+
 def add_coords(c1, c2):
-    return (c1[0]+c2[0], c1[1]+c2[1])
+    return c1[0] + c2[0], c1[1] + c2[1]
 
 
 # Given an initial position and move direction calculate the next position
 def coordinate_finder(pos,direction):
     if direction == 'n':
-        return (pos[0],pos[1]-1)
+        return pos[0], pos[1] - 1
     elif direction == 's':
-        return (pos[0],pos[1]+1)
+        return pos[0], pos[1] + 1
     elif direction == 'e':
-        return (pos[0]+1,pos[1])
+        return pos[0] + 1, pos[1]
     elif direction == 'w':
-        return (pos[0]-1,pos[1])
+        return pos[0] - 1, pos[1]
 
 
 def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
@@ -109,10 +110,10 @@ def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
                     continue
                 # Calculate values (action return + next state value)
                 # TODO: Probability calculations
-                action_values = {'n':grid_cells[x,y-1]+gamma*vals[x,y-1],
-                                 's':grid_cells[x,y+1]+gamma*vals[x,y+1],
-                                 'e':grid_cells[x+1,y]+gamma*vals[x+1,y],
-                                 'w':grid_cells[x-1,y]+gamma*vals[x-1,y]}
+                action_values = {'n': grid_cells[x,y-1]+gamma*vals[x,y-1],
+                                 's': grid_cells[x,y+1]+gamma*vals[x,y+1],
+                                 'e': grid_cells[x+1,y]+gamma*vals[x+1,y],
+                                 'w': grid_cells[x-1,y]+gamma*vals[x-1,y]}
                 # Get the orientation of the best action
                 best_action = max(action_values.keys(), key=(lambda key: action_values[key]))
                 # Find next position after action
