@@ -1,6 +1,9 @@
+from copy import deepcopy
+import numpy as np
 
 DISCOUNT_FACTOR = 0.9
-DELTA = 10
+THETA = 0.01
+
 CLEAN_REWARD = 0
 DIRTY_REWARD = 1
 GOAL_REWARD = 3
@@ -15,64 +18,43 @@ WALL_REWARD = 0
 # goal      2
 # death     3
 
+
 def robot_epoch(robot):
     # Initialization
-    actions = 0 # actions?
-    visible_tiles = robot.possible_tiles_after_move()
-    rewards = [CLEAN_REWARD, DIRTY_REWARD, GOAL_REWARD, DEATH_REWARD, OBSTACLE_REWARD, WALL_REWARD]
-    states = robot.grid
-    states_rewards = [rewards[s] for s in states]
 
-    #Set policy iteration parameters
-    max_policy_iter = 10000  # Maximum number of policy iterations
-    max_value_iter = 10000   # Maximum number of value iterations
-    pi = [0 for s in states] # Policy pi[s]
-    V = [0 for s in states]  # Value function V[s]
+    possible_directions = list(robot.dirs.values())
 
-    for i in range(max_policy_iter):
-        # Initial assumption: policy is stable
-        optimal_policy_found = True
+    V = np.zeros_like(robot.grid.cells)  # initialize V
+    policy = 1/4 * np.ones((robot.grid.n_cols, robot.grid.n_rows, 4)) # initialize equiprobably policy
+    policy_evaluation(robot, V, policy)
+    
+def policy_evaluation(robot, V, policy):
+    i = 0
+    while True:
+        i += 1
+        delta = 0
 
-        #Policy evaluation
-        # Compute value for each state under current policy
-        
-        #Policy iteration
-        # With updates state values, improve policy if needed
+        grid_cells = deepcopy(robot.grid.cells)
+        grid_cells[robot.pos] = 0
+        n_rows = robot.grid.n_rows
+        n_cols = robot.grid.n_cols
 
-        # If policy did not change, algorithm terminates
-        if optimal_policy_found:
+        for x in range(1, n_cols-1):
+            for y in range(1, n_rows-1):
+                # Robot cant visit negative tiles
+                if grid_cells[x, y] in [-1, -2, -3]:
+                    continue
+
+                v = 0
+                v += policy[x,y,0] * (grid_cells[x, y-1]+DISCOUNT_FACTOR*V[x, y-1]) # north
+                v += policy[x,y,1] * (grid_cells[x, y+1]+DISCOUNT_FACTOR*V[x, y+1]) # south
+                v += policy[x,y,2] * (grid_cells[x+1, y]+DISCOUNT_FACTOR*V[x+1, y]) # east
+                v += policy[x,y,3] * (grid_cells[x-1, y]+DISCOUNT_FACTOR*V[x-1, y]) # west
+
+                delta = max(delta, np.abs(V[x][y] - v))
+
+                V[x][y] = v
+
+        if delta < THETA:
             break
-
-# Wrong robot :(
-# def robot_epoch(robot):
-#     # Initialization
-#     actions = 0 # actions?
-#     visible_tiles = robot.possible_tiles_after_move()
-#     print(visible_tiles)
-#     # Get rid of any tiles outside a 1 step range (we don't care about our vision for this algorithm):
-#     possible_tiles = {move: move for move in visible_tiles if abs(move[0]) < 2 and abs(move[1]) < 2}
-#     print(possible_tiles)
-#     rewards = [CLEAN_REWARD, DIRTY_REWARD, GOAL_REWARD, DEATH_REWARD, OBSTACLE_REWARD, WALL_REWARD]
-#     states = list(visible_tiles.keys())
-#     states.append(robot.pos)
-#     buren = {state: [buur for buur in states if max(buur[0]-state[0], buur[1]-state[1])<= 1 and (buur != state)] for state in states}
-#     print_all_trans_prob(buren)
-#     pass
-
-# def get_trans_prob(new_pos, pos, buren):
-#     """Returns the transition probabilties for all state-action pairs"""
-#     if new_pos in buren[pos]:
-#         trans_prob = 1/len(buren[pos])
-#     else:
-#         trans_prob = 0
-#     return trans_prob
-
-# def print_all_trans_prob(buren):
-#     for pos, l_buren in buren.items():
-#         print(f"{pos} has {len(l_buren)} buren, namely: {l_buren}")
-#         print(f"which should all give probability {1/len(l_buren)}:)")
-#         for pot_buur in list(buren.keys()):
-#             if pot_buur in l_buren:
-#                 print(f"P({pot_buur}|{pos})={get_trans_prob(pot_buur, pos, buren)}, should be {1/len(l_buren)}")
-#             else:
-#                 print(f"P({pot_buur}|{pos})={get_trans_prob(pot_buur, pos, buren)}, should be 0")
+    print(f"Policy evaluation convergence: {i} iterations")
