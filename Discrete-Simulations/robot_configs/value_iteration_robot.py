@@ -16,8 +16,9 @@ def robot_epoch(robot):
     # Calculate the values via value iteration
     value_grid = value_iteration(robot,value_init)
     # Find action values
+    # One step lookahead to calculate the new values(value_grid) for all the possible moves.
     action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
-    # Find best move
+    # Find the best move by finding the action with highest value for this state 
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
@@ -81,6 +82,7 @@ def add_coords(c1, c2):
 
 
 # Given an initial position and move direction calculate the next position
+# calculate the next position based on the given current position and move direction 
 def coordinate_finder(pos,direction):
     if direction == 'n':
         return (pos[0],pos[1]-1)
@@ -108,12 +110,14 @@ def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
                 if grid_cells[x,y] in [-1,-2,-3]:
                     continue
                 # Calculate values (action return + next state value)
+                # a dictionary with four directions as keys and their corresponding action returns $+$ next state values as values
                 # TODO: Probability calculations
                 action_values = {'n':grid_cells[x,y-1]+gamma*vals[x,y-1],
                                  's':grid_cells[x,y+1]+gamma*vals[x,y+1],
                                  'e':grid_cells[x+1,y]+gamma*vals[x+1,y],
                                  'w':grid_cells[x-1,y]+gamma*vals[x-1,y]}
                 # Get the orientation of the best action
+                # The key with the maximum value among all keys in action values
                 best_action = max(action_values.keys(), key=(lambda key: action_values[key]))
                 # Find next position after action
                 next_pos = coordinate_finder((x,y),best_action)
