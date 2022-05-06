@@ -1,8 +1,12 @@
 # Import our robot algorithm to use in this simulation:
-from robot_configs.value_iteration_robot import robot_epoch
+from robot_configs.policy_iteration_robot import robot_epoch
 import pickle
 from environment import Robot
 import matplotlib.pyplot as plt
+from datetime import datetime
+import time
+
+start_time = time.time()
 
 grid_file = 'house.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
@@ -53,15 +57,18 @@ for i in range(100):
     n_moves.append(len(robot.history[0]))
     cleaned.append(clean_percent)
 
+date = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
 # Make some plots:
 plt.hist(cleaned)
 plt.title('Percentage of tiles cleaned.')
 plt.xlabel('% cleaned')
 plt.ylabel('count')
-plt.show()
+plt.savefig(f'output/cleaned_{date}.png')
 
 plt.hist(efficiencies)
 plt.title('Efficiency of robot.')
 plt.xlabel('Efficiency %')
 plt.ylabel('count')
-plt.show()
+plt.savefig(f'output/efficiency_{date}.png')
+
+print("--- Headless script took %s seconds ---" % (time.time() - start_time))

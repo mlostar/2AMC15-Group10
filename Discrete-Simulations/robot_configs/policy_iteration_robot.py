@@ -5,21 +5,6 @@ import numpy as np
 DISCOUNT_FACTOR = 0.9
 THETA = 0.01
 
-CLEAN_REWARD = 0
-DIRTY_REWARD = 1
-GOAL_REWARD = 3
-DEATH_REWARD = -10
-OBSTACLE_REWARD = 0
-WALL_REWARD = 0
-
-# obstacle  -2
-# wall      -1
-# clean     0
-# dirty     1
-# goal      2
-# death     3
-
-
 def robot_epoch(robot):
     # Initialization
     possible_moves = list(robot.dirs.values())
@@ -39,7 +24,7 @@ def robot_epoch(robot):
 
     # print(f"Policy iteration convergence: {i} iterations")
 
-    action_values = [V[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
+    action_values = [V[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves] # not sure about this calc
     # Find the best move by finding the action with highest value for this state
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
@@ -54,22 +39,20 @@ def policy_evaluation(robot, V, policy):
         i += 1
         delta = 0
 
-        grid_cells = deepcopy(robot.grid.cells)
-        grid_cells[robot.pos] = 0
         n_rows = robot.grid.n_rows
         n_cols = robot.grid.n_cols
 
         for x in range(1, n_cols-1):
             for y in range(1, n_rows-1):
                 # Robot cant visit negative tiles
-                if grid_cells[x, y] in [-1, -2, -3]:
+                if robot.grid.cells[x, y] < 0:
                     continue
 
                 v = 0
-                v += policy[x,y,0] * (grid_cells[x, y-1]+DISCOUNT_FACTOR*V[x, y-1]) # north
-                v += policy[x,y,1] * (grid_cells[x, y+1]+DISCOUNT_FACTOR*V[x, y+1]) # south
-                v += policy[x,y,2] * (grid_cells[x+1, y]+DISCOUNT_FACTOR*V[x+1, y]) # east
-                v += policy[x,y,3] * (grid_cells[x-1, y]+DISCOUNT_FACTOR*V[x-1, y]) # west
+                v += policy[x,y,0] * (get_reward(robot,x,y-1)+DISCOUNT_FACTOR*V[x, y-1]) # north
+                v += policy[x,y,1] * (get_reward(robot,x,y+1)+DISCOUNT_FACTOR*V[x, y+1]) # south
+                v += policy[x,y,2] * (get_reward(robot,x+1,y)+DISCOUNT_FACTOR*V[x+1, y]) # east
+                v += policy[x,y,3] * (get_reward(robot,x-1,y)+DISCOUNT_FACTOR*V[x-1, y]) # west
 
                 delta = max(delta, np.abs(V[x][y] - v))
 
@@ -82,11 +65,8 @@ def policy_evaluation(robot, V, policy):
 def policy_improvment(robot, V, policy):
     policy_stable = True # assume stable at first
 
-    grid_cells = deepcopy(robot.grid.cells)
-    grid_cells[robot.pos] = 0
     n_rows = robot.grid.n_rows
     n_cols = robot.grid.n_cols
-
 
     for x in range(1, n_cols-1):
         for y in range(1, n_rows-1):
@@ -95,10 +75,10 @@ def policy_improvment(robot, V, policy):
             max_v = -math.inf
             
             # Check best actions
-            action_values = [grid_cells[x,y-1]+DISCOUNT_FACTOR*V[x,y-1],
-                            grid_cells[x,y+1]+DISCOUNT_FACTOR*V[x,y+1],
-                            grid_cells[x+1,y]+DISCOUNT_FACTOR*V[x+1,y],
-                            grid_cells[x-1,y]+DISCOUNT_FACTOR*V[x-1,y]]
+            action_values = [get_reward(robot,x,y-1)+DISCOUNT_FACTOR*V[x,y-1],
+                            get_reward(robot,x,y+1)+DISCOUNT_FACTOR*V[x,y+1],
+                            get_reward(robot,x+1,y)+DISCOUNT_FACTOR*V[x+1,y],
+                            get_reward(robot,x-1,y)+DISCOUNT_FACTOR*V[x-1,y]]
 
             for action, value in enumerate(action_values):
                 if value > max_v:
@@ -120,6 +100,13 @@ def policy_improvment(robot, V, policy):
                 policy_stable = False
 
     return policy_stable
+
+def get_reward(robot, x, y):
+    if robot.pos == (x, y):
+        return 0
+    if robot.grid.cells[x,y] == 3:
+        return -3
+    return robot.grid.cells[x,y]
 
 def move_robot(robot, direction):
     # Orient ourselves towards the dirty tile:
