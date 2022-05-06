@@ -1,11 +1,6 @@
 import random
 import copy
 import numpy as np
-#DEFAULT_TILE_VALUE = 0
-
-#tile_location_value = {}
-#experiences = []
-
 
 
 def robot_epoch(robot):
@@ -13,50 +8,19 @@ def robot_epoch(robot):
     possible_moves = list(robot.dirs.values())
     # Init empty value grid
     value_init = np.zeros_like(robot.grid.cells)
+    # Reward grid
+    grid_cells = grid_to_rewards(robot)
     # Calculate the values via value iteration
     value_grid = value_iteration(robot,value_init)
     # Find action values
     # One step lookahead to calculate the new values(value_grid) for all the possible moves.
-    action_values = [value_grid[add_coords(robot.pos , move)] + robot.grid.cells[add_coords(robot.pos,move)] for move in possible_moves]
-    # Find the best move by finding the action with highest value for this state 
+    action_values = [value_grid[add_coords(robot.pos , move)] + grid_cells[add_coords(robot.pos,move)] for move in possible_moves]
+    # Find the best move by finding the action with highest value for this state
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
 
     move_robot(robot, new_orient)
-
-    #############################################
-
-
-    # if 1.0 in list(possible_tiles.values()) or 2.0 in list(possible_tiles.values()):
-    #     # If we can reach a goal tile this move:
-    #     if 2.0 in list(possible_tiles.values()):
-    #         move = get_move_by_label(possible_tiles, label=2)
-    #     # If we can reach a dirty tile this move:
-    #     elif 1.0 in list(possible_tiles.values()):
-    #         # Find the move that makes us reach the dirty tile:
-    #         move = get_move_by_label(possible_tiles, label=1)
-    #     else:
-    #         assert False
-    # # If we cannot reach a dirty tile:
-    # else:
-    #     # If we can no longer move:
-    #     while not robot.move():
-    #         # Check if we died to avoid endless looping:
-    #         if not robot.alive:
-    #             break
-    #         # Decide randomly how often we want to rotate:
-    #         times = random.randrange(1, 4)
-    #         # Decide randomly in which direction we rotate:
-    #         if random.randrange(0, 2) == 0:
-    #             # print(f'Rotating right, {times} times.')
-    #             for k in range(times):
-    #                 robot.rotate('r')
-    #         else:
-    #             # print(f'Rotating left, {times} times.')
-    #             for k in range(times):
-    #                 robot.rotate('l')
-    # # print('Historic coordinates:', [(x, y) for (x, y) in zip(robot.history[0], robot.history[1])])
 
 
 def get_move_by_label(tiles, label):
@@ -94,13 +58,25 @@ def coordinate_finder(pos,direction):
         return (pos[0]-1,pos[1])
 
 
+# Convert robot grid to a value grid
+def grid_to_rewards(robot):
+    temp_grid = copy.deepcopy(robot.grid.cells)
+    temp_grid[robot.pos] = 0
+    values = {-2:-2,
+              -1:-1,
+              0:0,
+              1:1,
+              2:2,
+              3:-3}
+    return np.vectorize(values.__getitem__)(temp_grid)
+
 def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
 
     #Using theta in the actual check breaks the code for me for some reason? Thats why its not used.
-    iter = 0
+
     while True:
-        grid_cells = copy.deepcopy(robot.grid.cells)
-        grid_cells[robot.pos] = 0
+        grid_cells = grid_to_rewards(robot)
+
         n_rows = robot.grid.n_rows
         n_cols = robot.grid.n_cols
         max_diff = 0
@@ -126,8 +102,7 @@ def value_iteration(robot,vals,theta = 0.01,gamma=0.3):
                 vals[x,y] = grid_cells[next_pos] + gamma*vals[next_pos]
                 if difference > max_diff:
                     max_diff = difference
-        if max_diff < 0.01 and iter > 0:
+        if max_diff < 0.01:
             break
-        iter+=1
     # Return converged value grid
     return vals
