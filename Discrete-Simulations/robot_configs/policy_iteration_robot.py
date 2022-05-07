@@ -21,10 +21,10 @@ def robot_epoch(robot):
         #Policy improvement
         policy_stable = policy_improvment(robot, V, policy)
 
-    # print(f"Policy iteration convergence: {i} iterations")
+    print(f"Policy iteration convergence: {i} iterations")
 
+    (x,y) = robot.pos
     action_values = [] # not sure about this calc
-    (x, y) = robot.pos
     for p_move in policy[x,y,:]:
         action_values.append(p_move)
 
@@ -32,20 +32,14 @@ def robot_epoch(robot):
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
-    
-    print(f'\nRobot pos: {robot.pos}')
-    print(f'Action values: {action_values}')
-    for move in possible_moves:
-        print(f'V({add_coords(robot.pos , move)}): {V[add_coords(robot.pos , move)]}')
-        print(f'Reward({add_coords(robot.pos,move)}): {get_reward(robot, add_coords(robot.pos,move))}')
 
     move_robot(robot, new_orient)
 
-        
 def policy_evaluation(robot, V, policy):
     i = 0
     while True:
         i += 1
+        old_V = V.copy()
         delta = 0
 
         n_rows = robot.grid.n_rows
@@ -56,16 +50,16 @@ def policy_evaluation(robot, V, policy):
                 # Robot cant visit negative tiles
                 if robot.grid.cells[x, y] < 0:
                     continue
-
+                
                 v = 0
-                v += policy[x,y,0] * (get_reward(robot,(x,y-1))+DISCOUNT_FACTOR*V[x, y-1]) # north
-                v += policy[x,y,1] * (get_reward(robot,(x+1,y))+DISCOUNT_FACTOR*V[x+1, y]) # east
-                v += policy[x,y,2] * (get_reward(robot,(x,y+1))+DISCOUNT_FACTOR*V[x, y+1]) # south
-                v += policy[x,y,3] * (get_reward(robot,(x-1,y))+DISCOUNT_FACTOR*V[x-1, y]) # west
-
-                delta = max(delta, np.abs(V[x][y] - v))
+                v += policy[x,y,0] * (get_reward(robot,(x,y-1))+DISCOUNT_FACTOR*old_V[x,y-1]) # north
+                v += policy[x,y,1] * (get_reward(robot,(x+1,y))+DISCOUNT_FACTOR*old_V[x+1,y]) # east
+                v += policy[x,y,2] * (get_reward(robot,(x,y+1))+DISCOUNT_FACTOR*old_V[x,y+1]) # south
+                v += policy[x,y,3] * (get_reward(robot,(x-1,y))+DISCOUNT_FACTOR*old_V[x-1,y]) # west
 
                 V[x][y] = v
+
+                delta = max(delta, np.abs(old_V[x][y] - V[x][y]))
 
         if delta < THETA:
             break
@@ -84,17 +78,17 @@ def policy_improvment(robot, V, policy):
             max_v = -math.inf
             
             # Check best actions
-            action_values = [get_reward(robot,(x,y-1))+DISCOUNT_FACTOR*V[x,y-1],
-                            get_reward(robot,(x+1,y))+DISCOUNT_FACTOR*V[x+1,y],
-                            get_reward(robot,(x,y+1))+DISCOUNT_FACTOR*V[x,y+1],
-                            get_reward(robot,(x-1,y))+DISCOUNT_FACTOR*V[x-1,y]]
+            action_values = [get_reward(robot,(x,y-1))+DISCOUNT_FACTOR*V[x,y-1]+get_visisted_penalty(robot,(x,y-1)),
+                            get_reward(robot,(x+1,y))+DISCOUNT_FACTOR*V[x+1,y]+get_visisted_penalty(robot,(x+1,y)),
+                            get_reward(robot,(x,y+1))+DISCOUNT_FACTOR*V[x,y+1]+get_visisted_penalty(robot,(x,y+1)),
+                            get_reward(robot,(x-1,y))+DISCOUNT_FACTOR*V[x-1,y]+get_visisted_penalty(robot,(x-1,y))]
 
             for action, value in enumerate(action_values):
                 if value > max_v:
                     max_v = value
                     best_actions = [action]
-                elif value == max_v: # handle possible same action value
-                    best_actions.append(action)
+                # elif value == max_v: # handle possible same action value
+                #     best_actions.append(action)
 
             # Create new policy
             prob = 1/len(best_actions)
@@ -110,10 +104,21 @@ def policy_improvment(robot, V, policy):
 
     return policy_stable
 
+def get_visisted_penalty(robot, pos):
+    (x,y) = pos
+    for i in range(len(robot.history[0])):
+        if x == robot.history[0][i] and y == robot.history[1][i]:
+            return -5
+    return 0
+
 def get_reward(robot, pos):
     if robot.pos == pos:
         return 0
     if robot.grid.cells[pos[0],pos[1]] == 3:
+        return -3
+    if robot.grid.cells[pos[0],pos[1]] == -1:
+        return -4
+    if robot.grid.cells[pos[0],pos[1]] == -2:
         return -3
     return robot.grid.cells[pos[0],pos[1]]
 
