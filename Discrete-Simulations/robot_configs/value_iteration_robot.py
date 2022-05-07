@@ -22,6 +22,14 @@ def robot_epoch(robot):
     move = possible_moves[action_values.index(max(action_values))]
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
+    
+    
+    print(f'\nRobot pos: {robot.pos}')
+    print(f'Action values: {action_values}')
+    print(f'V: {value_grid}')
+    for move in possible_moves:
+        print(f'V({add_coords(robot.pos , move)}): {value_grid[add_coords(robot.pos , move)]}')
+        print(f'Reward({add_coords(robot.pos,move)}): {robot.grid.cells[add_coords(robot.pos,move)]}')
 
     move_robot(robot, new_orient)
 

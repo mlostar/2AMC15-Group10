@@ -18,6 +18,10 @@ from environment import Grid, Robot
 # Import all robot algorithms present in the robot_configs folder:
 from robot_configs import *
 
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
@@ -25,7 +29,6 @@ socketio = SocketIO(app)
 grid, robots = None, None
 occupied = False
 PATH = os.getcwd()
-
 
 def draw_grid(grid):
     """'Helper function for creating a JSON payload which will be displayed in the browser."""
@@ -218,4 +221,4 @@ def handle_browser_update(json):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)
