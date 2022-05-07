@@ -57,7 +57,7 @@ for i in range(100):
     n_moves.append(len(robot.history[0]))
     cleaned.append(clean_percent)
 
-date = datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+date = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 # Make some plots:
 plt.hist(cleaned)
 plt.title('Percentage of tiles cleaned.')
