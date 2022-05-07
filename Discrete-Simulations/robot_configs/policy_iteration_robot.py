@@ -4,12 +4,13 @@ import numpy as np
 DISCOUNT_FACTOR = 0.9
 THETA = 0.01
 
+
 def robot_epoch(robot):
     # Initialization
     possible_moves = list(robot.dirs.values())
 
     V = np.zeros_like(robot.grid.cells)  # initialize V
-    policy = 1/4 * np.ones((robot.grid.n_cols, robot.grid.n_rows, 4)) # initialize equiprobably policy
+    policy = 1 / 4 * np.ones((robot.grid.n_cols, robot.grid.n_rows, 4))  # initialize equal probability policy
 
     i = 0
     policy_stable = False
@@ -18,8 +19,8 @@ def robot_epoch(robot):
         # Policy evaluation
         policy_evaluation(robot, V, policy)
 
-        #Policy improvement
-        policy_stable = policy_improvment(robot, V, policy)
+        # Policy improvement
+        policy_stable = policy_improvement(robot, V, policy)
 
     print(f"Policy iteration convergence: {i} iterations")
 
@@ -45,8 +46,8 @@ def policy_evaluation(robot, V, policy):
         n_rows = robot.grid.n_rows
         n_cols = robot.grid.n_cols
 
-        for x in range(1, n_cols-1):
-            for y in range(1, n_rows-1):
+        for x in range(1, n_cols - 1):
+            for y in range(1, n_rows - 1):
                 # Robot cant visit negative tiles
                 if robot.grid.cells[x, y] < 0:
                     continue
@@ -65,18 +66,19 @@ def policy_evaluation(robot, V, policy):
             break
     # print(f"Policy evaluation convergence: {i} iterations")
 
-def policy_improvment(robot, V, policy):
-    policy_stable = True # assume stable at first
+
+def policy_improvement(robot, V, policy):
+    policy_stable = True  # assume stable at first
 
     n_rows = robot.grid.n_rows
     n_cols = robot.grid.n_cols
 
-    for x in range(1, n_cols-1):
-        for y in range(1, n_rows-1):
-            old_policy = policy[x,y,:].copy()
+    for x in range(1, n_cols - 1):
+        for y in range(1, n_rows - 1):
+            old_policy = policy[x, y, :].copy()
             best_actions = []
             max_v = -math.inf
-            
+
             # Check best actions
             action_values = [get_reward(robot,(x,y-1))+DISCOUNT_FACTOR*V[x,y-1]+get_visisted_penalty(robot,(x,y-1)),
                             get_reward(robot,(x+1,y))+DISCOUNT_FACTOR*V[x+1,y]+get_visisted_penalty(robot,(x+1,y)),
@@ -91,15 +93,15 @@ def policy_improvment(robot, V, policy):
                 #     best_actions.append(action)
 
             # Create new policy
-            prob = 1/len(best_actions)
+            prob = 1 / len(best_actions)
             for action in range(len(action_values)):
                 if action in best_actions:
-                    policy[x,y,action] = prob
+                    policy[x, y, action] = prob
                 else:
-                    policy[x,y,action] = 0
+                    policy[x, y, action] = 0
 
             # Check if policy changed
-            if not (old_policy == policy[x,y,:]).all():
+            if not (old_policy == policy[x, y, :]).all():
                 policy_stable = False
 
     return policy_stable
@@ -114,7 +116,7 @@ def get_visisted_penalty(robot, pos):
 def get_reward(robot, pos):
     if robot.pos == pos:
         return 0
-    if robot.grid.cells[pos[0],pos[1]] == 3:
+    if robot.grid.cells[pos[0], pos[1]] == 3:
         return -3
     if robot.grid.cells[pos[0],pos[1]] == -1:
         return -4
@@ -131,9 +133,11 @@ def move_robot(robot, direction):
     # Move:
     robot.move()
 
+
 # Returns one of the directions (e.g. 'n') given the move
 def get_orientation_by_move(robot, move):
     return list(robot.dirs.keys())[list(robot.dirs.values()).index(move)]
 
+
 def add_coords(c1, c2):
-    return (c1[0]+c2[0], c1[1]+c2[1])
+    return (c1[0] + c2[0], c1[1] + c2[1])

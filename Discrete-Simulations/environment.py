@@ -12,7 +12,7 @@ class Robot:
         self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
         self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
         self.grid.cells[pos] = self.orients[self.orientation]
-        self.history = [[], []]
+        self.history = [[pos[0]], [pos[1]]]
         self.p_move = p_move
         self.battery_drain_p = battery_drain_p
         self.battery_drain_lam = battery_drain_lam
