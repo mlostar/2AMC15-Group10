@@ -32,7 +32,7 @@ def robot_epoch(robot):
                GOAL_REWARD,
                DEATH_REWARD,
                OBSTACLE_REWARD,
-               WALL_REWARD] # TODO: put this as global var
+               WALL_REWARD]
     V = np.zeros(n_rows*n_cols) # initialize V
     policy = 1 / 4 * np.ones((robot.grid.n_cols*robot.grid.n_rows, 4)) # initialize equal probability policy
 
@@ -45,7 +45,7 @@ def robot_epoch(robot):
         policy_stable = policy_improvement(robot, V, policy, rewards, possible_moves)
 
     # Find the best move by finding the action with highest value for this state
-    move = possible_moves[np.argmax(policy[np.coord2ind(robot.pos, n_rows)])]
+    move = possible_moves[np.argmax(policy[np.coord2ind(robot.pos, n_rows), :])]
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
 
