@@ -1,4 +1,6 @@
 # Import our robot algorithm to use in this simulation:
+from copy import copy
+
 import numpy as np
 import pathlib
 from robot_configs.value_iteration_robot import robot_epoch
@@ -8,13 +10,14 @@ import matplotlib.pyplot as plt
 from itertools import product
 import pandas as pd  # TODO: remove dependency!!!!!!!!!!!!!!!!!!!!!!!!
 import random
+import multiprocessing as mp
 
 
-ALGORITHM = "value-iteration"
+ALGORITHM = "value-iteration-test"
 random.seed(1)
 
 
-def rerun(n=100, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
+def rerun(n=1, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
     # Cleaned tile percentage at which the room is considered 'clean':
     stopping_criteria = 100
 
@@ -83,13 +86,28 @@ def rerun(n=100, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
     return np.median(cleaned), np.median(efficiencies)
 
 
+# Append a new result to a dictionary of results which is assumed to have keys for the metrics
+def append_new_result(runs_output, original_combination):
+    print(id(original_combination))
+    median_cleaned, median_efficiency = runs_output
+    print(f"For {original_combination}, mc: {median_cleaned} me: {median_efficiency}")
+
+    # Insert the parameters
+    for key, value in original_combination.items():
+        results[key].append(value)
+
+    # Insert the result
+    results["median cleaned percentage"].append(median_cleaned)
+    results["median efficiency percentage"].append(median_efficiency)
+
+
 if __name__ == "__main__":
     results = {"median cleaned percentage": [],
                "median efficiency percentage": []}
     # Make sure that the key matches the name of the argument
-    parameters = {"grid_file": [path.name for path in pathlib.Path("grid_configs").glob("*")][:1],
-                  "random_move_prob": [0.1, 1.0],
-                  "gamma": [0.3]}
+    parameters = {"grid_file": [path.name for path in pathlib.Path("grid_configs").glob("*")][:],
+                  "random_move_prob": [0.0, 0.5],
+                  "gamma": [0.3, 0.5, 0.7]}
 
     # Make a cartesian product of the parameter values and place them in a list of dictionaries where the keys are the
     # parameter names and the values are taken from the respective parameter combination
@@ -101,20 +119,22 @@ if __name__ == "__main__":
     for key in parameters.keys():
         results[key] = []
 
-    # Run the model multiple times for each combination of the parameters
+    # Run the model multiple times for each combination of the parameters in parallel
+    pool = mp.Pool()
+
     for combination in combinations:
-        median_cleaned, median_efficiency = rerun(**combination)
-        print(f"For {combination}, mc: {median_cleaned} me: {median_efficiency}")
+        # Need this awkward setup due to late binding in Python
+        def fun(combi=combination):
+            pool.apply_async(rerun, kwds=combination, callback=lambda out: append_new_result(out, combi))
 
-        # Insert the parameters
-        for key, value in combination.items():
-            results[key].append(value)
+        fun(combination)
 
-        # Insert the result
-        results["median cleaned percentage"].append(median_cleaned)
-        results["median efficiency percentage"].append(median_efficiency)
+    pool.close()
+    pool.join()
 
     df = pd.DataFrame.from_dict(results)
-    df.to_csv(f"{ALGORITHM}.csv")
+    df.to_csv(f"{ALGORITHM}.csv", float_format=".3f")
+
+    df = df[["gamma", "median cleaned percentage", "median efficiency percentage"]]
     df = df.groupby("gamma").mean()
-    df.to_csv(f"{ALGORITHM}-by-gamma.csv")
+    df.to_csv(f"{ALGORITHM}-by-gamma.csv", float_format=".3f")
