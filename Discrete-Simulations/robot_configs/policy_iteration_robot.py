@@ -6,7 +6,7 @@ gamma = 0.3
 THETA = 0.01
 
 
-def robot_epoch(robot):
+def robot_epoch(robot,gamma = 0.3):
     # Initialization
     possible_moves = list(robot.dirs.values())
     robot.grid.cells[robot.pos] = 0
@@ -51,10 +51,10 @@ def policy_evaluation(robot, V, policy):
                 current_pos = (x,y)
                 
                 v = 0
-                v += calc_action_val('n',current_pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('e',current_pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('s',current_pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('w',current_pos,grid_cells,old_V,robot.p_move,policy,True)
+                v += calc_action_val('n',current_pos,grid_cells,old_V,gamma,robot.p_move,policy,True)
+                v += calc_action_val('e',current_pos,grid_cells,old_V,gamma,robot.p_move,policy,True)
+                v += calc_action_val('s',current_pos,grid_cells,old_V,gamma,robot.p_move,policy,True)
+                v += calc_action_val('w',current_pos,grid_cells,old_V,gamma,robot.p_move,policy,True)
 
                 V[x][y] = v
 
@@ -78,10 +78,10 @@ def policy_improvement(robot, V, policy):
             
             current_pos = (x,y)
             # Check best actions
-            action_values = [calc_action_val('n',current_pos,grid_cells,V,robot.p_move),
-                            calc_action_val('e',current_pos,grid_cells,V,robot.p_move),
-                            calc_action_val('s',current_pos,grid_cells,V,robot.p_move),
-                            calc_action_val('w',current_pos,grid_cells,V,robot.p_move)]
+            action_values = [calc_action_val('n',current_pos,grid_cells,V,gamma,robot.p_move),
+                            calc_action_val('e',current_pos,grid_cells,V,gamma,robot.p_move),
+                            calc_action_val('s',current_pos,grid_cells,V,gamma,robot.p_move),
+                            calc_action_val('w',current_pos,grid_cells,V,gamma,robot.p_move)]
 
             for action, value in enumerate(action_values):
                 if value > max_v:
@@ -104,7 +104,7 @@ def policy_improvement(robot, V, policy):
 
     return policy_stable
 
-def calc_action_val(action_orientation,pos,grid_cells,V,random_move_p,policy=np.empty,use_policy=False):
+def calc_action_val(action_orientation,pos,grid_cells,V,gamma,random_move_p,policy=np.empty,use_policy=False):
     (x,y) = pos
     # Calculate action value based on random move probability
     # Primary move probability = 1-p_move + p_move/4
