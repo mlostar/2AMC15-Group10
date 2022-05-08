@@ -47,12 +47,14 @@ def policy_evaluation(robot, V, policy):
                 # Robot cant visit negative tiles
                 if robot.grid.cells[x, y] in [-2,-1,-3]:
                     continue
+
+                current_pos = (x,y)
                 
                 v = 0
-                v += calc_action_val('n',robot.pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('e',robot.pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('s',robot.pos,grid_cells,old_V,robot.p_move,policy,True)
-                v += calc_action_val('w',robot.pos,grid_cells,old_V,robot.p_move,policy,True)
+                v += calc_action_val('n',current_pos,grid_cells,old_V,robot.p_move,policy,True)
+                v += calc_action_val('e',current_pos,grid_cells,old_V,robot.p_move,policy,True)
+                v += calc_action_val('s',current_pos,grid_cells,old_V,robot.p_move,policy,True)
+                v += calc_action_val('w',current_pos,grid_cells,old_V,robot.p_move,policy,True)
 
                 V[x][y] = v
 
@@ -73,12 +75,13 @@ def policy_improvement(robot, V, policy):
             old_policy = policy[x, y, :].copy()
             best_actions = []
             max_v = -math.inf
-
+            
+            current_pos = (x,y)
             # Check best actions
-            action_values = [calc_action_val('n',robot.pos,grid_cells,V,robot.p_move),
-                            calc_action_val('e',robot.pos,grid_cells,V,robot.p_move),
-                            calc_action_val('s',robot.pos,grid_cells,V,robot.p_move),
-                            calc_action_val('w',robot.pos,grid_cells,V,robot.p_move)]
+            action_values = [calc_action_val('n',current_pos,grid_cells,V,robot.p_move),
+                            calc_action_val('e',current_pos,grid_cells,V,robot.p_move),
+                            calc_action_val('s',current_pos,grid_cells,V,robot.p_move),
+                            calc_action_val('w',current_pos,grid_cells,V,robot.p_move)]
 
             for action, value in enumerate(action_values):
                 if value > max_v:
