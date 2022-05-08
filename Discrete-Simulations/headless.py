@@ -8,7 +8,6 @@ import pickle
 from environment import Robot
 import matplotlib.pyplot as plt
 from itertools import product
-import pandas as pd  # TODO: remove dependency!!!!!!!!!!!!!!!!!!!!!!!!
 import random
 import multiprocessing as mp
 
@@ -131,10 +130,3 @@ if __name__ == "__main__":
 
     pool.close()
     pool.join()
-
-    df = pd.DataFrame.from_dict(results)
-    df.to_csv(f"{ALGORITHM}.csv", float_format="%.3f")
-
-    df = df[["gamma", "median cleaned percentage", "median efficiency percentage"]]
-    df = df.groupby("gamma").mean()
-    df.to_csv(f"{ALGORITHM}-by-gamma.csv", float_format="%.3f")
