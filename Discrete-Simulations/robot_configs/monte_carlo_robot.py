@@ -1,10 +1,10 @@
 import copy
-
 import numpy as np
-from numpy.random import choice
-
-epsilon = 0.35
-gamma = 0.75
+import time
+from collections import deque
+import random
+epsilon = 0.1
+gamma = 0.90
 
 
 def robot_epoch(robot):
@@ -17,7 +17,7 @@ def robot_epoch(robot):
     # Initialization of e-soft policy, Q and returns
     Q = np.zeros((n_cols, n_rows, 4)).tolist()
     policy = ((np.ones((n_cols, n_rows, 4)) * epsilon) / 4).tolist()
-    global_returns = [[[[] for i in range(4)] for row in range(n_rows)] for col in range(n_cols)]
+    global_returns = [[[deque() for i in range(4)] for row in range(n_rows)] for col in range(n_cols)]
 
     # Hack to never explore walls/obstacles in the first iteration
     # Get rewards
@@ -36,9 +36,10 @@ def robot_epoch(robot):
     while True:
         # Get rewards
         rewards = grid_to_rewards(robot)
+        start = time.time()
         ep_history, ep_returns = generate_episode(policy, robot)
+        print("Generated episode in :", time.time() - start)
         unique_pairs = list(dict.fromkeys(ep_history))
-
         # Update Q
         for pair in unique_pairs:
             (x, y, move_orientation) = pair
@@ -67,7 +68,8 @@ def robot_epoch(robot):
                     else:
                         policy[x][y][action_id] = epsilon / 4
         iter += 1
-        if np.array_equal(prev_policy, policy) or iter == 200:
+        # Add iter >=5 check to atleast do 5 walks
+        if (np.array_equal(prev_policy, policy) and iter>=5) or iter == 200:
             print("Iters until convergence: ", iter)
             break
     # Find next move based on converged policy
@@ -83,9 +85,9 @@ def generate_episode(policy, robot):
     move_pairs = list(robot.dirs.items())
     current_pos = robot.pos
     # (position,action_orientation) pairs in order
-    history = []
+    history = deque()
     # Stores returns of (position,action_orientation) pairs
-    episode_returns = []
+    episode_returns = deque()
     is_episode_terminated = False
     rewards = grid_to_rewards(robot)
     original_rewards = copy.deepcopy(rewards)
@@ -102,18 +104,25 @@ def generate_episode(policy, robot):
             # Add the move to history of moves
             history.append((current_pos[0], current_pos[1], move_orientation))
             # Add reward of the move to returns of all previous moves and append
-            length = len(episode_returns)
-            episode_returns = [episode_returns[i] + pow(gamma, length - i) * reward for i in range(0, length)]
             episode_returns.append(reward)
             # Set current position to the next position if move was not into a wall/obstacle
             current_pos = next_pos
-            # if rewards[current_pos[0]][current_pos[1]] == 1:
-            rewards[current_pos[0]][current_pos[1]] = -0.1
-            # else:
-            #    rewards[current_pos[0]][current_pos[1]] = -0.5
-        # Terminate the episode once the robot makes 70 moves
+            # Set reward to zero since it's now a clean tile
+            rewards[current_pos[0]][current_pos[1]] = 0
+        # Terminate the episode once the robot makes certain no of moves
         # or if the robot steps on a death cell
-        if len(episode_returns) >= 80 or original_rewards[current_pos[0], current_pos[1]] == -10:
+        ep_length = len(episode_returns)
+        if (ep_length >= 400 and sum(episode_returns) > 0) or ep_length == 1000 or original_rewards[current_pos[0], current_pos[1]] == -10:
+            print("Simulated moves: ",len(episode_returns))
+            # ep_length long array of gamma values
+            gammas = np.full((ep_length,),gamma)
+            powers = np.arange(ep_length)
+            # Calculate the decaying gamma values
+            gammas = np.power(gammas,powers)
+            ep_rewards = np.array(episode_returns)
+            # Calculate returns by doing a dot product between the array of rewards after this move
+            # with decaying gamma values
+            episode_returns = [np.dot(gammas[:ep_length-i],ep_rewards[i:]) for i in range(ep_length)]
             is_episode_terminated = True
     return history, episode_returns
 
@@ -122,12 +131,8 @@ def get_move_from_policy(policy, current_pos):
     x = current_pos[0]
     y = current_pos[1]
     indices = [0, 1, 2, 3]  # move indices
-    # Temporarily normalize policy probabilities so that they add up to 1
-    # For compatibility with np.choice
-    p = np.array(policy[x][y])
-    p /= p.sum()
     # Choose next move based on policy probabilities
-    move_idx = choice(indices, p=p)
+    move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
     return move_idx
 
 
@@ -140,7 +145,7 @@ def grid_to_rewards(robot):
 
     values = {-2: -1.,
               -1: -1.,
-              0: -0.1,
+              0: 0,
               1: 5.,
               2: 10.,
               3: -10.}
