@@ -4,7 +4,11 @@ import random
 import numpy as np
 
 
-def robot_epoch(robot, gamma=0.3, epsilon=1.0, alpha=0.9, n_epochs=50, max_episode_length=100):
+random.seed(0)
+np.random.seed(0)
+
+
+def robot_epoch(robot, gamma=0.3, epsilon=0.5, alpha=0.9, n_epochs=100, max_episode_length=200):
     """
     Run an epoch of the value iteration robot.
     """
@@ -75,7 +79,9 @@ def grid_to_rewards(robot):
               1: 1,
               2: 2,
               3: -3}
-    return np.vectorize(values.__getitem__)(temp_grid)
+    output = np.vectorize(values.__getitem__)(temp_grid)
+
+    return output
 
 
 def estimate_qs(robot,
@@ -92,6 +98,10 @@ def estimate_qs(robot,
     """
 
     qs = copy.deepcopy(qs)
+    q_n = qs[:, :, 0]
+    q_e = qs[:, :, 1]
+    q_s = qs[:, :, 2]
+    q_w = qs[:, :, 3]
 
     for i in range(n_epochs):
         robot = copy.deepcopy(robot)
@@ -107,11 +117,7 @@ def estimate_qs(robot,
             move_robot(robot, new_orient)
 
             new_position = robot.pos
-
-            if new_position == old_position:
-                reward = -1
-            else:
-                reward = rewards_per_cell[new_position]
+            reward = rewards_per_cell[add_coords(old_position, move)]
 
             move_index = list(robot.dirs.values()).index(move)
 
@@ -123,6 +129,7 @@ def estimate_qs(robot,
                 break
 
             rewards_per_cell = grid_to_rewards(robot)
+            transposed_reward = np.transpose(rewards_per_cell, axes=(1, 0))
 
     return qs
 
