@@ -8,19 +8,16 @@ random.seed(0)
 np.random.seed(0)
 
 
-def robot_epoch(robot, gamma=0.3, epsilon=0.5, alpha=0.9, n_epochs=100, max_episode_length=200):
+def robot_epoch(robot, gamma=0.9, epsilon=0.5, alpha=0.3, n_epochs=100, max_episode_length=200):
     """
     Run an epoch of the value iteration robot.
     """
 
     # Init empty q values cube
     q_init = np.zeros(shape=(*np.array(robot.grid.cells).shape, 4))
-    # Reward grid
-    reward_per_cell = grid_to_rewards(robot)
     # Calculate the values via value iteration
     optimal_qs = estimate_qs(robot,
                              q_init,
-                             reward_per_cell,
                              gamma=gamma,
                              epsilon=epsilon,
                              alpha=alpha,
@@ -86,7 +83,6 @@ def grid_to_rewards(robot):
 
 def estimate_qs(robot,
                 qs,
-                rewards_per_cell,
                 theta=0.01,
                 gamma=0.3,
                 epsilon=0.1,
@@ -97,38 +93,39 @@ def estimate_qs(robot,
     Estimate the optimal q values.
     """
 
-    qs = copy.deepcopy(qs)
-    q_n = qs[:, :, 0]
-    q_e = qs[:, :, 1]
-    q_s = qs[:, :, 2]
-    q_w = qs[:, :, 3]
+    q_n = np.transpose(qs[:, :, 0], axes=(1, 0))
+    q_e = np.transpose(qs[:, :, 1], axes=(1, 0))
+    q_s = np.transpose(qs[:, :, 2], axes=(1, 0))
+    q_w = np.transpose(qs[:, :, 3], axes=(1, 0))
 
     for i in range(n_epochs):
-        robot = copy.deepcopy(robot)
+        robot_copy = copy.deepcopy(robot)
 
         for j in range(max_episode_length):
+            rewards_per_cell = grid_to_rewards(robot_copy)
+
             if random.random() > epsilon:
-                move = get_optimal_move(robot, qs)
+                move = get_optimal_move(robot_copy, qs)
             else:
-                move = random.choice(list(robot.dirs.values()))
+                move = random.choice(list(robot_copy.dirs.values()))
 
-            old_position = robot.pos
-            new_orient = get_orientation_by_move(robot, move=move)
-            move_robot(robot, new_orient)
+            old_position = robot_copy.pos
+            new_orient = get_orientation_by_move(robot_copy, move=move)
+            move_robot(robot_copy, new_orient)
 
-            new_position = robot.pos
+            new_position = robot_copy.pos
             reward = rewards_per_cell[add_coords(old_position, move)]
 
-            move_index = list(robot.dirs.values()).index(move)
+            move_index = list(robot_copy.dirs.values()).index(move)
 
             # TD equation
             qs[old_position][move_index] += alpha*(reward+gamma*(np.max(qs[new_position]))-qs[old_position][move_index])
 
             # Early stop if the robot has died or cleaned all the cells.
-            if not robot.alive or (robot.grid.cells >= 1).sum() == 0:
+            if not robot_copy.alive or (robot_copy.grid.cells >= 1).sum() == 0:
                 break
 
-            rewards_per_cell = grid_to_rewards(robot)
+            # rewards_per_cell = grid_to_rewards(robot)
             transposed_reward = np.transpose(rewards_per_cell, axes=(1, 0))
 
     return qs
