@@ -8,7 +8,7 @@ random.seed(0)
 np.random.seed(0)
 
 
-def robot_epoch(robot, gamma=0.9, epsilon=0.5, alpha=0.3, n_epochs=100, max_episode_length=200):
+def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_episode_length=50):
     """
     Run an epoch of the value iteration robot.
     """
@@ -24,7 +24,6 @@ def robot_epoch(robot, gamma=0.9, epsilon=0.5, alpha=0.3, n_epochs=100, max_epis
                              n_epochs=n_epochs,
                              max_episode_length=max_episode_length)
     # Find optimal move
-    # TODO: filter out illegal moves
     move = get_optimal_move(robot, optimal_qs)
     # Find out how we should orient ourselves:
     new_orient = get_orientation_by_move(robot, move=move)
@@ -83,7 +82,6 @@ def grid_to_rewards(robot):
 
 def estimate_qs(robot,
                 qs,
-                theta=0.01,
                 gamma=0.3,
                 epsilon=0.1,
                 alpha=0.9,
@@ -92,17 +90,14 @@ def estimate_qs(robot,
     """
     Estimate the optimal q values.
     """
-
-    q_n = np.transpose(qs[:, :, 0], axes=(1, 0))
-    q_e = np.transpose(qs[:, :, 1], axes=(1, 0))
-    q_s = np.transpose(qs[:, :, 2], axes=(1, 0))
-    q_w = np.transpose(qs[:, :, 3], axes=(1, 0))
+    current_epsilon = epsilon
+    rewards_per_cell = grid_to_rewards(robot)
 
     for i in range(n_epochs):
+        current_epsilon *= current_epsilon * 0.99
         robot_copy = copy.deepcopy(robot)
 
         for j in range(max_episode_length):
-            rewards_per_cell = grid_to_rewards(robot_copy)
 
             if random.random() > epsilon:
                 move = get_optimal_move(robot_copy, qs)
@@ -124,9 +119,6 @@ def estimate_qs(robot,
             # Early stop if the robot has died or cleaned all the cells.
             if not robot_copy.alive or (robot_copy.grid.cells >= 1).sum() == 0:
                 break
-
-            # rewards_per_cell = grid_to_rewards(robot)
-            transposed_reward = np.transpose(rewards_per_cell, axes=(1, 0))
 
     return qs
 
