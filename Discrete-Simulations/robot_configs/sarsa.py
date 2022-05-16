@@ -1,5 +1,6 @@
 import copy
 import random
+
 import numpy as np
 
 
@@ -7,27 +8,17 @@ random.seed(0)
 np.random.seed(0)
 
 
-def robot_epoch(robot,
-                gamma=0.1,
-                epsilon=1.0,
-                epsilon_decay=0.99,
-                epsilon_min=0.01,
-                alpha=0.99,
-                n_epochs=500,
-                max_episode_length=50):
+def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_episode_length=50):
     """
     Run an epoch of the value iteration robot.
     """
 
-    # Init empty q values cube
-    q_init = np.zeros(shape=(*np.array(robot.grid.cells).shape, 4))
+    # Init the policy
+    pi_init = np.zeros(shape=(*np.array(robot.grid.cells).shape, 4))
     # Calculate the values via value iteration
-    optimal_qs = estimate_qs(robot,
-                             q_init,
+    optimal_qs = estimate_q(robot,
                              gamma=gamma,
                              epsilon=epsilon,
-                             epsilon_decay=epsilon_decay,
-                             epsilon_min=epsilon_min,
                              alpha=alpha,
                              n_epochs=n_epochs,
                              max_episode_length=max_episode_length)
@@ -39,9 +30,9 @@ def robot_epoch(robot,
     move_robot(robot, new_orient)
 
 
-def get_optimal_move(robot, optimal_qs):
+def get_optimal_move(robot, pi):
     possible_moves = list(robot.dirs.items())
-    return possible_moves[np.argmax(optimal_qs[robot.pos])][1]
+    return possible_moves[np.argmax(pi[robot.pos])][1]
 
 
 def get_orientation_by_move(robot, move):
@@ -50,6 +41,9 @@ def get_orientation_by_move(robot, move):
     """
     return list(robot.dirs.keys())[list(robot.dirs.values()).index(move)]
 
+
+def move_to_index(robot, move):
+    return list(robot.dirs.values()).index(move)
 
 def move_robot(robot, direction):
     """
@@ -95,44 +89,46 @@ def get_epsilon_greedy_move(robot, epsilon, q):
         return random.choice(list(robot.dirs.values()))
 
 
-def estimate_qs(robot,
-                qs,
+def estimate_q(robot,
                 gamma=0.3,
                 epsilon=0.1,
-                epsilon_decay=0.99,
                 epsilon_min=0.01,
+                epsilon_decay=0.99,
                 alpha=0.9,
                 n_epochs=50,
                 max_episode_length=100):
     """
     Estimate the optimal q values.
     """
+
+    q = np.zeros(shape=(*np.array(robot.grid.cells).shape, 4))
     current_epsilon = epsilon
     rewards_per_cell = grid_to_rewards(robot)
 
     for i in range(n_epochs):
-        # Perform epsilon decay
-        current_epsilon = max(current_epsilon*0.99, epsilon_min)
+        current_epsilon = max(current_epsilon*epsilon_decay, epsilon_min)
         robot_copy = copy.deepcopy(robot)
 
         for j in range(max_episode_length):
-            # Choose an epsilon-greedy move
-            move = get_epsilon_greedy_move(robot, current_epsilon, qs)
-
-            # Make the move and store the details
+            # Make a move and record the details
+            move = get_epsilon_greedy_move(robot_copy, current_epsilon, q)
             old_position = robot_copy.pos
             new_orient = get_orientation_by_move(robot_copy, move=move)
             move_robot(robot_copy, new_orient)
             new_position = robot_copy.pos
             reward = rewards_per_cell[add_coords(old_position, move)]
 
+            # Look ahead for the next move and its q value
+            move_index = move_to_index(robot_copy, move)
+            next_move = get_epsilon_greedy_move(robot_copy, current_epsilon, q)
+            next_move_q = q[new_position][move_to_index(robot_copy, next_move)]
+
             # TD equation
-            move_index = list(robot_copy.dirs.values()).index(move)
-            qs[old_position][move_index] += alpha*(reward+gamma*(np.max(qs[new_position]))-qs[old_position][move_index])
+            q[old_position][move_index] += alpha*(reward+gamma*next_move_q-q[old_position][move_index])
 
             # Early stop if the robot has died or cleaned all the cells.
             if not robot_copy.alive or (robot_copy.grid.cells >= 1).sum() == 0:
                 break
 
-    return qs
+    return q
 
