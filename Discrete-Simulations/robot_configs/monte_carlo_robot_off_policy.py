@@ -12,7 +12,7 @@ gamma = 0.90
 # robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=0.0)
 # move_pairs = list(robot.dirs.items())
 
-def robot_epoch(robot,gamma):
+def robot_epoch(robot):
     # (move_orientation, (move_increment)) pairs
     move_pairs = list(robot.dirs.items())
     # no of rows
@@ -54,7 +54,7 @@ def robot_epoch(robot,gamma):
     #next_move_id = policy[current_pos[0]][current_pos[1]].index(max(policy[current_pos[0]][current_pos[1]]))
     next_move_id = get_move_from_policy(policy, current_pos)
     next_orientation = move_pairs[next_move_id][0]
-    #print(next_orientation)
+    print(next_orientation)
     # Move
     move_robot(robot, next_orientation)
 
@@ -95,12 +95,13 @@ def get_move_from_policy(policy, current_pos):
     indices = [0, 1, 2, 3]  # move indices
     # Choose next move based on policy probabilities
     #print(np.shape(policy))
-    if (np.shape(policy)==(15,12,4)):
+    if (len(np.shape(policy))==3):
         a=sum(policy[x][y])
     else:
         a=policy[x][y]
+    #print(a)
     if(a>0):
-        if (np.shape(policy)==(15,12,4)):
+        if (len(np.shape(policy))==3):
             move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
         else:
             move_idx=policy[x][y]
@@ -267,4 +268,4 @@ with open(os.path.join('grid_configs',"house.grid"), 'rb') as f:
             grid = pickle.load(f)
 robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=0.0)
 move_pairs = list(robot.dirs.items())
-robot_epoch(robot,0.1)
+robot_epoch(robot)
