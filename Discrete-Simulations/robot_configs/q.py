@@ -3,12 +3,8 @@ import random
 import numpy as np
 
 
-random.seed(0)
-np.random.seed(0)
-
-
 def robot_epoch(robot,
-                gamma=0.1,
+                gamma=0.3,
                 epsilon=1.0,
                 epsilon_decay=0.99,
                 epsilon_min=0.01,

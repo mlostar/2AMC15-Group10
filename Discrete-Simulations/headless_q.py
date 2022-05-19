@@ -1,23 +1,36 @@
 # Import our robot algorithm to use in this simulation:
-from copy import copy
-import os
-import numpy as np
-import pathlib
-from robot_configs.policy_iteration_robot import robot_epoch
-import pickle
-from environment import Robot
-import matplotlib.pyplot as plt
-from itertools import product
-import pandas as pd  # TODO: remove dependency!!!!!!!!!!!!!!!!!!!!!!!!
-import random
+
 import multiprocessing as mp
+import pathlib
+import pickle
+import random
+import time
+from itertools import product
+import ray
 
+import matplotlib.pyplot as plt
+import numpy as np
 
-ALGORITHM = "policy-iteration-test"
+from environment import Robot
+from robot_configs.q import robot_epoch
+
+ALGORITHM = "q-learning"
 random.seed(1)
+np.random.seed(0)
+ray.init()
 
 
-def rerun(n=1, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
+@ray.remote
+def rerun(n_restarts=5,
+          grid_file="metaforum.grid",
+          random_move_prob=0.0,
+          gamma=0.3,
+          epsilon=1.0,
+          epsilon_decay=0.99,
+          epsilon_min=0.01,
+          alpha=0.99,
+          n_epochs=100,
+          max_episode_length=50):
     # Cleaned tile percentage at which the room is considered 'clean':
     stopping_criteria = 100
 
@@ -28,23 +41,31 @@ def rerun(n=1, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
     cleaned = []
 
     # Run n times:
-    for i in range(n):
+    for i in range(n_restarts):
         # Open the grid file.
         # (You can create one yourself using the provided editor).
-        #with open(f'grid_configs/{grid_file}', 'rb') as f:
-        with open(os.path.join('grid_configs',grid_file), 'rb') as f:
+        with open(f'grid_configs/{grid_file}', 'rb') as f:
             grid = pickle.load(f)
         # Calculate the total visitable tiles:
         n_total_tiles = (grid.cells >= 0).sum()
         # Spawn the robot at (1,1) facing north with battery drainage enabled:
-        robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=random_move_prob)
-        # Keep track of the number of robot decision epochs:
-        n_epochs = 0
+        robot = Robot(grid, (2, 2), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=random_move_prob)
+        # Keep track of the number of steps within the game:
+        n_game_steps = 0
+        efficiency = 0
+        clean_percent = 0
 
         while True:
-            n_epochs += 1
+            n_game_steps += 1
             # Do a robot epoch (basically call the robot algorithm once):
-            robot_epoch(robot, gamma=gamma)
+            robot_epoch(robot,
+                        gamma,
+                        epsilon,
+                        epsilon_decay,
+                        epsilon_min,
+                        alpha,
+                        n_epochs,
+                        max_episode_length)
             # Stop this simulation instance if robot died :( :
             if not robot.alive:
                 deaths += 1
@@ -72,45 +93,47 @@ def rerun(n=1, grid_file="house.grid", gamma=0.3, random_move_prob=0.0):
     # Make some plots:
     plt.figure(figsize=(10, 10))
     plt.hist(cleaned)
-    #plt.title(f'Percentage of tiles cleaned -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
+    plt.title(f'Percentage of tiles cleaned -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
     plt.xlabel('% cleaned')
     plt.ylabel('count')
-    # plt.show()
+    plt.show()
 
     plt.figure(figsize=(10, 10))
     plt.hist(efficiencies)
-    #plt.title(f'Efficiency of robot -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
+    plt.title(f'Efficiency of robot -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
     plt.xlabel('Efficiency %')
     plt.ylabel('count')
-    # plt.show()
+    plt.show()
 
-    return np.median(cleaned), np.median(efficiencies)
+    return np.median(cleaned), np.median(efficiencies), np.std(cleaned), np.std(efficiencies)
 
 
 # Append a new result to a dictionary of results which is assumed to have keys for the metrics
 def append_new_result(runs_output, original_combination):
-    print(id(original_combination))
-    median_cleaned, median_efficiency = runs_output
-    #print(f"For {original_combination}, mc: {median_cleaned} me: {median_efficiency}")
-    print("For {}, mc: {} me: {}".format(original_combination,median_cleaned,median_efficiency))
-
+    median_cleaned, median_efficiency, std_cleaned, std_efficiency = runs_output
+    print(f"For {original_combination}, mc: {median_cleaned} me: {median_efficiency}")
 
     # Insert the parameters
     for key, value in original_combination.items():
         results[key].append(value)
 
     # Insert the result
-    results["median cleaned percentage"].append(median_cleaned)
-    results["median efficiency percentage"].append(median_efficiency)
+    results["mean cleaned percentage"].append(median_cleaned)
+    results["mean efficiency percentage"].append(median_efficiency)
+    results["std cleaned percentage"].append(std_cleaned)
+    results["std efficiency percentage"].append(std_efficiency)
 
 
 if __name__ == "__main__":
-    results = {"median cleaned percentage": [],
-               "median efficiency percentage": []}
+    results = {"mean cleaned percentage": [],
+               "mean efficiency percentage": [],
+               "std cleaned percentage": [],
+               "std efficiency percentage": []}
     # Make sure that the key matches the name of the argument
-    parameters = {"grid_file": [path.name for path in pathlib.Path("grid_configs").glob("*")][:],
-                  "random_move_prob": [0.0, 0.5],
-                  "gamma": [0.3, 0.5, 0.7]}
+    parameters = {"random_move_prob": [0.0, 0.5],
+                  "gamma": [0.4, 0.5, 0.6, 0.7],
+                  "alpha": [0.4, 0.5, 0.6, 0.7],
+                  "epsilon": [0.8, 0.9, 1.0]}
 
     # Make a cartesian product of the parameter values and place them in a list of dictionaries where the keys are the
     # parameter names and the values are taken from the respective parameter combination
@@ -122,27 +145,13 @@ if __name__ == "__main__":
     for key in parameters.keys():
         results[key] = []
 
-    # out=rerun(**combinations[0])
-    # append_new_result(out, combinations[0])
     # Run the model multiple times for each combination of the parameters in parallel
-    pool = mp.Pool()
+    promises = []
 
-    for combination in combinations:
-        # Need this awkward setup due to late binding in Python
-        def fun(combi=combination):
-            pool.apply_async(rerun, kwds=combination, callback=lambda out: append_new_result(out, combi))
+    futures = [rerun.remote(**combi) for combi in combinations]
+    outputs = ray.get(futures)
 
-        fun(combination)
+    for output, combi in zip(outputs, combinations):
+        append_new_result(output, combi)
 
-    pool.close()
-    pool.join()
-
-    df = pd.DataFrame.from_dict(results)
-    # df.to_csv(f"{ALGORITHM}.csv", float_format="%.3f")
-    df.to_csv(str(ALGORITHM)+".csv", float_format="%.3f")
-
-    df = df[["gamma", "median cleaned percentage", "median efficiency percentage"]]
-    df = df.groupby("gamma").mean()
-    # df.to_csv(f"{ALGORITHM}-by-gamma.csv", float_format="%.3f")
-    df.to_csv(str(ALGORITHM)+"-by-gamma.csv", float_format="%.3f")
-
+    [promise.wait() for promise in promises]
