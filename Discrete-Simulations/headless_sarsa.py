@@ -16,7 +16,7 @@ import numpy as np
 from environment import Robot
 from robot_configs.q import robot_epoch
 
-ALGORITHM = "q-learning"
+ALGORITHM = "SARSA"
 random.seed(1)
 np.random.seed(0)
 ray.init()
