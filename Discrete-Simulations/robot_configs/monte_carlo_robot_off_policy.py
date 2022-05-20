@@ -5,7 +5,7 @@ from environment import Robot
 from collections import deque
 import copy
 import random
-epsilon = 0.1
+epsilon = 0.4
 gamma = 0.90
 # with open(os.path.join('grid_configs',"house.grid"), 'rb') as f:
 #             grid = pickle.load(f)
@@ -37,7 +37,7 @@ def robot_epoch(robot):
     iter = 0
     #print(type(target_policy))
     behavior_policy=create_behavior_policy(robot)
-    policy=create_greedy_policy(behavior_policy)
+    policy=create_greedy_policy(behavior_policy,robot)
     while True:
         rewards = grid_to_rewards(robot)
         # generate an episode
@@ -52,7 +52,7 @@ def robot_epoch(robot):
             break
     current_pos = robot.pos
     #next_move_id = policy[current_pos[0]][current_pos[1]].index(max(policy[current_pos[0]][current_pos[1]]))
-    next_move_id = get_move_from_policy(policy, current_pos)
+    next_move_id = get_move_from_policy(policy, current_pos,robot.p_move)
     next_orientation = move_pairs[next_move_id][0]
     print(next_orientation)
     # Move
@@ -88,30 +88,59 @@ def create_behavior_policy(robot):
         iter += 1
     return policy
 
-def get_move_from_policy(policy, current_pos):
-    #print(np.shape(policy),current_pos)
+# def get_move_from_policy(policy, current_pos):
+#     #print(np.shape(policy),current_pos)
+#     x = current_pos[0]
+#     y = current_pos[1]
+#     indices = [0, 1, 2, 3]  # move indices
+#     # Choose next move based on policy probabilities
+#     #print(np.shape(policy))
+#     if (len(np.shape(policy))==3):
+#         a=sum(policy[x][y])
+#     else:
+#         a=policy[x][y]
+#     #print(a)
+#     if(a>0):
+#         if (len(np.shape(policy))==3):
+#             move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
+#         else:
+#             move_idx=policy[x][y]
+#             #print(policy[x][y])
+#     else:
+#         move_idx=random.choice(indices)
+#     return move_idx
+
+def get_move_from_policy(policy, current_pos,random_move_p):
     x = current_pos[0]
     y = current_pos[1]
     indices = [0, 1, 2, 3]  # move indices
-    # Choose next move based on policy probabilities
-    #print(np.shape(policy))
     if (len(np.shape(policy))==3):
         a=sum(policy[x][y])
     else:
         a=policy[x][y]
     #print(a)
+    # max_step=10
+    # step=0
+    #while(True):
     if(a>0):
-        if (len(np.shape(policy))==3):
+        # Choose next move based on policy probabilities
+        if random.random() > random_move_p:
             move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
+            #print('+>')
         else:
-            move_idx=policy[x][y]
-            #print(policy[x][y])
+            #Choose the next move randomly to simulate random move probability
+            move_idx = random.choices(indices, weights=[0.25,0.25,0.25,0.25],k=1)[0]
+            #print('->')
     else:
         move_idx=random.choice(indices)
+        #print('a<0')
+        # if(not is_wall_obstacle(robot,move_idx)):break
+        # step+=1
+        # if(step>max_step):break
     return move_idx
 
 #2.
-def backwards(ep_history,policy):
+def backwards(ep_history,policy,robot):
     # state_action_episode_end = ep_history[-1]
     # state_episode_end = (state_action_episode_end[0],state_action_episode_end[1])
     #compare from a_T or a_T-1 (currently from T-1)
@@ -120,13 +149,28 @@ def backwards(ep_history,policy):
         action_behavior = ep_history[-1-i][2]
         #print(ep_history[-1-i][0])
         #print(state)
-        move_idx=get_move_from_policy(policy,state)
-        action_target, move_increment = move_pairs[get_move_from_policy(policy,state)]
+        move_idx=get_move_from_policy(policy,state,robot.p_move)
+        move_pairs = list(robot.dirs.items())
+        action_target, move_increment = move_pairs[get_move_from_policy(policy,state,robot.p_move)]
         #print(action_target)
         if(action_behavior!=action_target):
             break
     return i
 #backwards(ep_history,behavior_policy)
+
+def is_wall_obstacle(robot,chosen_move_idx):
+    rewards = grid_to_rewards(robot)
+    #print(rewards)
+    original_rewards = copy.deepcopy(rewards)
+    current_pos = robot.pos
+    move_orientation, move_increment = move_pairs[chosen_move_idx]
+    next_pos = coordinate_finder(current_pos, move_orientation)
+    #reward = rewards[next_pos[0]][next_pos[1]]
+    original_reward = original_rewards[next_pos[0]][next_pos[1]]
+    if original_reward == -1:
+        return True
+    else:
+        return False
 
 #3.
 def pi_target_behavior(t,ep_history,behavior_policy):
@@ -157,7 +201,7 @@ def generate_episode(policy, robot):
     # Run episode
     while not is_episode_terminated:
         # Find best move from policy
-        chosen_move_idx = get_move_from_policy(policy, current_pos)
+        chosen_move_idx = get_move_from_policy(policy, current_pos,robot.p_move)
         move_orientation, move_increment = move_pairs[chosen_move_idx]
         next_pos = coordinate_finder(current_pos, move_orientation)
         reward = rewards[next_pos[0]][next_pos[1]]
@@ -177,7 +221,7 @@ def generate_episode(policy, robot):
         # Terminate the episode once the robot makes certain no of moves
         # or if the robot steps on a death cell
         ep_length = len(episode_returns)
-        if (ep_length >= 400 and sum(episode_returns) > 0) or ep_length == 1000 or original_rewards[current_pos[0], current_pos[1]] == -10:
+        if (ep_length >= 2000 and sum(episode_returns) > 0) or ep_length == 10000 or original_rewards[current_pos[0], current_pos[1]] == -10:
             print("Simulated moves: ",len(episode_returns))
             # ep_length long array of gamma values
             gammas = np.full((ep_length,),gamma)
@@ -187,7 +231,9 @@ def generate_episode(policy, robot):
             ep_rewards = np.array(episode_returns).tolist()
             # Calculate returns by doing a dot product between the array of rewards after this move
             # with decaying gamma values
-            ep_returns = [np.dot(gammas[:i],ep_rewards[:i]) for i in range(ep_length)]
+            ep_returns = [np.dot(gammas[:ep_length-i],ep_rewards[i:]) for i in range(ep_length)]
+            #ep_returns = [np.dot(gammas[:i],ep_rewards[:i]) for i in range(ep_length)]
+            is_episode_terminated = True
             return history,ep_rewards,ep_returns
 
 def calc_action_val(robot,policy,ep_history,ep_returns,behavior_policy):
@@ -197,7 +243,7 @@ def calc_action_val(robot,policy,ep_history,ep_returns,behavior_policy):
     n_cols = robot.grid.n_cols
     Q = (np.zeros((n_cols, n_rows, 4))).tolist()
     #print(np.shape(Q))
-    tao = len(ep_history)-backwards(ep_history,policy)
+    tao = len(ep_history)-backwards(ep_history,policy,robot)
     for t in range(tao-1,len(ep_history)-1):
         state = [ep_history[t][0], ep_history[t][1]]
         action = ep_history[t][2]
@@ -213,8 +259,11 @@ def calc_action_val(robot,policy,ep_history,ep_returns,behavior_policy):
         #print(state[0],state[1],action)
     return Q
 
-def create_greedy_policy(policy):
-    A = np.zeros((15,12,4))
+def create_greedy_policy(policy, robot):
+    n_rows = robot.grid.n_rows
+    # no of cols
+    n_cols = robot.grid.n_cols
+    A = np.zeros((n_cols,n_rows,4))
     #(A)
     best_action = np.argmax(policy,-1)
     #print(best_action)
@@ -262,10 +311,10 @@ def coordinate_finder(pos, direction):
     elif direction == 'w':
         return (pos[0] - 1, pos[1])
 
-
 gamma=0.9
 with open(os.path.join('grid_configs',"house.grid"), 'rb') as f:
             grid = pickle.load(f)
 robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=0.0)
 move_pairs = list(robot.dirs.items())
 robot_epoch(robot)
+print(robot.p_move)
