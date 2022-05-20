@@ -3,7 +3,7 @@ import numpy as np
 import time
 from collections import deque
 import random
-epsilon = 0.1
+epsilon = 0.4
 gamma = 0.90
 
 
@@ -94,7 +94,7 @@ def generate_episode(policy, robot):
     # Run episode
     while not is_episode_terminated:
         # Find best move from policy
-        chosen_move_idx = get_move_from_policy(policy, current_pos)
+        chosen_move_idx = get_move_from_policy(policy, current_pos,robot.p_move)
         move_orientation, move_increment = move_pairs[chosen_move_idx]
         next_pos = coordinate_finder(current_pos, move_orientation)
         reward = rewards[next_pos[0]][next_pos[1]]
@@ -112,7 +112,7 @@ def generate_episode(policy, robot):
         # Terminate the episode once the robot makes certain no of moves
         # or if the robot steps on a death cell
         ep_length = len(episode_returns)
-        if (ep_length >= 400 and sum(episode_returns) > 0) or ep_length == 1000 or original_rewards[current_pos[0], current_pos[1]] == -10:
+        if (ep_length >= 2000 and sum(episode_returns) > 0) or ep_length == 10000 or original_rewards[current_pos[0], current_pos[1]] == -10:
             print("Simulated moves: ",len(episode_returns))
             # ep_length long array of gamma values
             gammas = np.full((ep_length,),gamma)
@@ -127,12 +127,16 @@ def generate_episode(policy, robot):
     return history, episode_returns
 
 
-def get_move_from_policy(policy, current_pos):
+def get_move_from_policy(policy, current_pos,random_move_p):
     x = current_pos[0]
     y = current_pos[1]
     indices = [0, 1, 2, 3]  # move indices
     # Choose next move based on policy probabilities
-    move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
+    if random.random() > random_move_p:
+        move_idx = random.choices(indices, weights=policy[x][y],k=1)[0]
+    else:
+        #Choose the next move randomly to simulate random move probability
+        move_idx = random.choices(indices, weights=[0.25,0.25,0.25,0.25],k=1)[0]
     return move_idx
 
 
