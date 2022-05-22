@@ -79,14 +79,27 @@ def robot_epoch(robot, epsilon=0.4, gamma=0.9):
 
 
 def generate_episode(policy, robot, gamma):
+    '''
+        Generates an episode
+        :param policy: Policy array containing the action probabilities for each state
+        :type policy: 3 dimensional numpy array [x][y][action_id]
+        :param robot: robot object
+        :type robot: Robot class
+        :param gamma: gamma value
+        :type gamma: float
+
+        :return: history deque containing (x,y,action_id) tuples,
+                episode_returns deque containing the returns of (x,y,action_id) pairs
+        '''
     # (move_orientation, (move_increment)) pairs
     move_pairs = list(robot.dirs.items())
     current_pos = robot.pos
-    # (position,action_orientation) pairs in order
+    # (position_x,position_y,action_orientation) tuples in order
     history = deque()
-    # Stores returns of (position,action_orientation) pairs
+    # Stores returns of (position_x,position_y,action_orientation) tuples in history deque
     episode_returns = deque()
     is_episode_terminated = False
+    # Calculate the rewards from the robot grid
     rewards = grid_to_rewards(robot)
     original_rewards = copy.deepcopy(rewards)
     # Run episode
@@ -94,8 +107,11 @@ def generate_episode(policy, robot, gamma):
         # Find best move from policy
         chosen_move_idx = get_move_from_policy(policy, current_pos,robot.p_move)
         move_orientation, move_increment = move_pairs[chosen_move_idx]
+        # Calculate where we end up after taking the move
         next_pos = coordinate_finder(current_pos, move_orientation)
+        # Get the reward of the next position
         reward = rewards[next_pos[0]][next_pos[1]]
+        # Get the original reward of the next position
         original_reward = original_rewards[next_pos[0]][next_pos[1]]
         # Ignore moves into walls/obstacles
         if original_reward != -1:
@@ -107,17 +123,19 @@ def generate_episode(policy, robot, gamma):
             current_pos = next_pos
             # Set reward to zero since it's now a clean tile
             rewards[current_pos[0]][current_pos[1]] = 0
-        # Terminate the episode once the robot makes certain no of moves
-        # or if the robot steps on a death cell
         ep_length = len(episode_returns)
+        # Terminate the episode once we simulate at least 2k episodes and there's at least one action with higher than
+        # zero reward.
+        # Terminate the episode regardless of the returns if we reach 10k simulated steps.
+        # Terminate the episode if the robot steps on a death cell
         if (ep_length >= 2000 and sum(episode_returns) > 0) or ep_length == 10000 or original_rewards[current_pos[0], current_pos[1]] == -10:
             print("Simulated moves: ",len(episode_returns))
             # ep_length long array of gamma values
             gammas = np.full((ep_length,),gamma)
             powers = np.arange(ep_length)
             # Calculate the decaying gamma values
-            gammas = np.power(gammas,powers)
-            ep_rewards = np.array(episode_returns)
+            gammas = np.power(gammas,powers) # e.g [0.9,0.81,0.729 ....]
+            ep_rewards = np.array(episode_returns) # e.g [5,0,0,5,10,0,0 ...]
             # Calculate returns by doing a dot product between the array of rewards after this move
             # with decaying gamma values
             episode_returns = [np.dot(gammas[:ep_length-i],ep_rewards[i:]) for i in range(ep_length)]
@@ -126,6 +144,15 @@ def generate_episode(policy, robot, gamma):
 
 
 def get_move_from_policy(policy, current_pos,random_move_p):
+    '''
+    :param policy: Policy array containing the action probabilities for each state
+    :type policy: 3 dimensional numpy array [x][y][action_id]
+    :param current_pos: Current position of the robot on the board
+    :type current_pos: (x,y) tuple of integers
+    :param random_move_p: Random move probability determined by the environment
+    :type random_move_p: float
+    :return: action index determined based on the policy action probabilities
+    '''
     x = current_pos[0]
     y = current_pos[1]
     indices = [0, 1, 2, 3]  # move indices
@@ -143,14 +170,20 @@ def grid_to_rewards(robot):
     Returns a reward grid based on the input robot.
     """
     temp_grid = copy.deepcopy(robot.grid.cells)
+    # Set the reward of the position of the robot to zero
     temp_grid[robot.pos] = 0
-
+    # wall/obstacle reward = -1
+    # Clean cell reward = 0
+    # Dirty cell reward = 5
+    # Goal cell reward = 10
+    # Death cell reward = -10
     values = {-2: -1.,
               -1: -1.,
               0: 0,
               1: 5.,
               2: 10.,
               3: -10.}
+    # Transform the grid to the rewards by applying the dictionary
     return np.vectorize(values.__getitem__)(temp_grid)
 
 
