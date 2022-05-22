@@ -17,11 +17,11 @@ def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_epi
     pi_init = np.zeros(shape=(*np.array(robot.grid.cells).shape, 4))
     # Calculate the values via value iteration
     optimal_qs = estimate_q(robot,
-                             gamma=gamma,
-                             epsilon=epsilon,
-                             alpha=alpha,
-                             n_epochs=n_epochs,
-                             max_episode_length=max_episode_length)
+                            gamma=gamma,
+                            epsilon=epsilon,
+                            alpha=alpha,
+                            n_epochs=n_epochs,
+                            max_episode_length=max_episode_length)
     # Find optimal move
     move = get_optimal_move(robot, optimal_qs)
     # Find out how we should orient ourselves:
@@ -31,6 +31,9 @@ def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_epi
 
 
 def get_optimal_move(robot, pi):
+    """
+    Return the optimal move.
+    """
     possible_moves = list(robot.dirs.items())
     return possible_moves[np.argmax(pi[robot.pos])][1]
 
@@ -43,7 +46,11 @@ def get_orientation_by_move(robot, move):
 
 
 def move_to_index(robot, move):
+    """
+    Returns the index of the move.
+    """
     return list(robot.dirs.values()).index(move)
+
 
 def move_robot(robot, direction):
     """
@@ -83,6 +90,9 @@ def grid_to_rewards(robot):
 
 
 def get_epsilon_greedy_move(robot, epsilon, q):
+    """
+    Returns the epsilon greedy move.
+    """
     if random.random() > epsilon:
         return get_optimal_move(robot, q)
     else:
@@ -90,13 +100,13 @@ def get_epsilon_greedy_move(robot, epsilon, q):
 
 
 def estimate_q(robot,
-                gamma=0.3,
-                epsilon=0.1,
-                epsilon_min=0.01,
-                epsilon_decay=0.99,
-                alpha=0.9,
-                n_epochs=50,
-                max_episode_length=100):
+               gamma=0.3,
+               epsilon=0.1,
+               epsilon_min=0.01,
+               epsilon_decay=0.99,
+               alpha=0.9,
+               n_epochs=50,
+               max_episode_length=100):
     """
     Estimate the optimal q values.
     """
@@ -124,11 +134,11 @@ def estimate_q(robot,
             next_move_q = q[new_position][move_to_index(robot_copy, next_move)]
 
             # TD equation
-            q[old_position][move_index] += alpha*(reward+gamma*next_move_q-q[old_position][move_index])
+            q[old_position][move_index] += alpha * \
+                (reward+gamma*next_move_q-q[old_position][move_index])
 
             # Early stop if the robot has died or cleaned all the cells.
             if not robot_copy.alive or (robot_copy.grid.cells >= 1).sum() == 0:
                 break
 
     return q
-

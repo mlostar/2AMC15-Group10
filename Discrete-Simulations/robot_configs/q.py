@@ -40,6 +40,9 @@ def robot_epoch(robot,
 
 
 def get_optimal_move(robot, optimal_qs):
+    """
+    Return the optimal move.
+    """
     possible_moves = list(robot.dirs.items())
     return possible_moves[np.argmax(optimal_qs[robot.pos])][1]
 
@@ -89,6 +92,9 @@ def grid_to_rewards(robot):
 
 
 def get_epsilon_greedy_move(robot, epsilon, q):
+    """
+    Returns the epsilon greedy move.
+    """
     if random.random() > epsilon:
         return get_optimal_move(robot, q)
     else:
@@ -128,11 +134,12 @@ def estimate_qs(robot,
 
             # TD equation
             move_index = list(robot_copy.dirs.values()).index(move)
-            qs[old_position][move_index] += alpha*(reward+gamma*(np.max(qs[new_position]))-qs[old_position][move_index])
+            qs[old_position][move_index] += alpha * \
+                (reward+gamma*(np.max(qs[new_position])
+                               )-qs[old_position][move_index])
 
             # Early stop if the robot has died or cleaned all the cells.
             if not robot_copy.alive or (robot_copy.grid.cells >= 1).sum() == 0:
                 break
 
     return qs
-
