@@ -3,11 +3,9 @@ import numpy as np
 import time
 from collections import deque
 import random
-epsilon = 0.4
-gamma = 0.90
 
 
-def robot_epoch(robot):
+def robot_epoch(robot, epsilon=0.4, gamma=0.9):
     # (move_orientation, (move_increment)) pairs
     move_pairs = list(robot.dirs.items())
     # no of rows
@@ -37,7 +35,7 @@ def robot_epoch(robot):
         # Get rewards
         rewards = grid_to_rewards(robot)
         start = time.time()
-        ep_history, ep_returns = generate_episode(policy, robot)
+        ep_history, ep_returns = generate_episode(policy, robot, gamma)
         print("Generated episode in :", time.time() - start)
         unique_pairs = list(dict.fromkeys(ep_history))
         # Update Q
@@ -80,7 +78,7 @@ def robot_epoch(robot):
     move_robot(robot, next_orientation)
 
 
-def generate_episode(policy, robot):
+def generate_episode(policy, robot, gamma):
     # (move_orientation, (move_increment)) pairs
     move_pairs = list(robot.dirs.items())
     current_pos = robot.pos

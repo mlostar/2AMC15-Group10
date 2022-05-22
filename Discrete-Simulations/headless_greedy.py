@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from environment import Robot
-from robot_configs.sarsa import robot_epoch
+from robot_configs.greedy_random_robot import robot_epoch
 
-ALGORITHM = "SARSA"
+ALGORITHM = "greedy-random"
 random.seed(1)
 np.random.seed(0)
 ray.init()
@@ -25,14 +25,7 @@ ray.init()
 @ray.remote
 def rerun(n_restarts=5,
           grid_file="metaforum.grid",
-          random_move_prob=0.0,
-          gamma=0.3,
-          epsilon=1.0,
-          epsilon_decay=0.99,
-          epsilon_min=0.01,
-          alpha=0.99,
-          n_epochs=100,
-          max_episode_length=50):
+          random_move_prob=0.0):
     # Cleaned tile percentage at which the room is considered 'clean':
     stopping_criteria = 100
 
@@ -60,14 +53,7 @@ def rerun(n_restarts=5,
         while True:
             n_game_steps += 1
             # Do a robot epoch (basically call the robot algorithm once):
-            robot_epoch(robot,
-                        gamma,
-                        epsilon,
-                        epsilon_min,
-                        epsilon_decay,
-                        alpha,
-                        n_epochs,
-                        max_episode_length)
+            robot_epoch(robot)
             # Stop this simulation instance if robot died :( :
             if not robot.alive:
                 deaths += 1
@@ -95,14 +81,14 @@ def rerun(n_restarts=5,
     # Make some plots:
     plt.figure(figsize=(10, 10))
     plt.hist(cleaned)
-    plt.title(f'Percentage of tiles cleaned -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
+    plt.title(f'Percentage of tiles cleaned -- grid: {grid_file} -- random move: {random_move_prob}')
     plt.xlabel('% cleaned')
     plt.ylabel('count')
     plt.show()
 
     plt.figure(figsize=(10, 10))
     plt.hist(efficiencies)
-    plt.title(f'Efficiency of robot -- grid: {grid_file} -- gamma: {gamma} -- random move: {random_move_prob}')
+    plt.title(f'Efficiency of robot -- grid: {grid_file} -- random move: {random_move_prob}')
     plt.xlabel('Efficiency %')
     plt.ylabel('count')
     plt.show()
@@ -132,10 +118,7 @@ if __name__ == "__main__":
                "std cleaned percentage": [],
                "std efficiency percentage": []}
     # Make sure that the key matches the name of the argument
-    parameters = {"random_move_prob": [0.0, 0.5],
-                  "gamma": [0.4, 0.5, 0.6, 0.7],
-                  "alpha": [0.4, 0.5, 0.6, 0.7],
-                  "epsilon": [0.8, 0.9, 1.0]}
+    parameters = {"random_move_prob": [0.0, 0.5]}
 
     # Make a cartesian product of the parameter values and place them in a list of dictionaries where the keys are the
     # parameter names and the values are taken from the respective parameter combination

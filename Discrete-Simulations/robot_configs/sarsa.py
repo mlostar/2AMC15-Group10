@@ -8,7 +8,14 @@ random.seed(0)
 np.random.seed(0)
 
 
-def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_episode_length=50):
+def robot_epoch(robot,
+                gamma=0.1,
+                epsilon=1.0,
+                epsilon_min=0.01,
+                epsilon_decay=0.99,
+                alpha=0.99,
+                n_epochs=500,
+                max_episode_length=50):
     """
     Run an epoch of the value iteration robot.
     """
@@ -19,6 +26,8 @@ def robot_epoch(robot, gamma=0.1, epsilon=1.0, alpha=0.99, n_epochs=500, max_epi
     optimal_qs = estimate_q(robot,
                              gamma=gamma,
                              epsilon=epsilon,
+                            epsilon_min=epsilon_min,
+                            epsilon_decay=epsilon_decay,
                              alpha=alpha,
                              n_epochs=n_epochs,
                              max_episode_length=max_episode_length)

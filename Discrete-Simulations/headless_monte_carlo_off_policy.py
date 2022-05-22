@@ -1,10 +1,6 @@
 # Import our robot algorithm to use in this simulation:
-
-import multiprocessing as mp
-import pathlib
 import pickle
 import random
-import time
 from itertools import product
 
 import pandas as pd
@@ -14,9 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from environment import Robot
-from robot_configs.sarsa import robot_epoch
+from robot_configs.monte_carlo_robot_off_policy import robot_epoch
 
-ALGORITHM = "SARSA"
+ALGORITHM = "monte_carlo_off_policy"
 random.seed(1)
 np.random.seed(0)
 ray.init()
@@ -26,13 +22,8 @@ ray.init()
 def rerun(n_restarts=5,
           grid_file="metaforum.grid",
           random_move_prob=0.0,
-          gamma=0.3,
-          epsilon=1.0,
-          epsilon_decay=0.99,
-          epsilon_min=0.01,
-          alpha=0.99,
-          n_epochs=100,
-          max_episode_length=50):
+          gamma=0.4,
+          epsilon=0.9):
     # Cleaned tile percentage at which the room is considered 'clean':
     stopping_criteria = 100
 
@@ -61,13 +52,8 @@ def rerun(n_restarts=5,
             n_game_steps += 1
             # Do a robot epoch (basically call the robot algorithm once):
             robot_epoch(robot,
-                        gamma,
                         epsilon,
-                        epsilon_min,
-                        epsilon_decay,
-                        alpha,
-                        n_epochs,
-                        max_episode_length)
+                        gamma)
             # Stop this simulation instance if robot died :( :
             if not robot.alive:
                 deaths += 1
@@ -134,7 +120,6 @@ if __name__ == "__main__":
     # Make sure that the key matches the name of the argument
     parameters = {"random_move_prob": [0.0, 0.5],
                   "gamma": [0.4, 0.5, 0.6, 0.7],
-                  "alpha": [0.4, 0.5, 0.6, 0.7],
                   "epsilon": [0.8, 0.9, 1.0]}
 
     # Make a cartesian product of the parameter values and place them in a list of dictionaries where the keys are the

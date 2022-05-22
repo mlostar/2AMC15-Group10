@@ -1,13 +1,10 @@
 import numpy as np
-from environment import Robot
 from collections import deque
 import copy
 import random
-epsilon = 0.4
-gamma = 0.90
 
 
-def robot_epoch(robot):
+def robot_epoch(robot, epsilon=0.4, gamma=0.9):
     # (move_orientation, (move_increment)) pairs
     move_pairs = list(robot.dirs.items())
     # no of rows
@@ -31,7 +28,7 @@ def robot_epoch(robot):
                     policy[x][y][action_id] = 0
     iter = 0
     # print(type(target_policy))
-    behavior_policy = create_behavior_policy(robot)
+    behavior_policy = create_behavior_policy(robot, epsilon)
     policy = create_greedy_policy(behavior_policy, robot)
     while True:
         rewards = grid_to_rewards(robot)
@@ -39,7 +36,8 @@ def robot_epoch(robot):
         prev_policy = copy.deepcopy(policy)
         # generate an episode using behavior policy
         ep_history, _, ep_returns = generate_episode(
-            behavior_policy, robot)
+            behavior_policy, robot, gamma
+        )
         Q = calc_action_val(robot, prev_policy, ep_history,
                             ep_returns, behavior_policy)
         policy = np.argmax(Q, -1)
@@ -70,7 +68,7 @@ def create_greedy_policy(policy, robot):
     return A
 
 
-def create_behavior_policy(robot):
+def create_behavior_policy(robot, epsilon):
     """
     initialize behavior policy with epsilon-soft
     """
@@ -104,7 +102,7 @@ def create_behavior_policy(robot):
     return policy
 
 
-def generate_episode(policy, robot):
+def generate_episode(policy, robot, gamma):
     """
     generate an episode using given policy
     """
