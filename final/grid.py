@@ -31,8 +31,8 @@ class Grid:
 
         return False
 
-    def is_blocked(self, robot):
-        return any([ob.intersect(robot.bounding_box) for ob in self.obstacles])
+    def is_blocked(self, box: "Square"):
+        return any([ob.intersect(box) for ob in self.obstacles])
 
     def get_border_coords(self):
         return [0, self.width, self.width, 0, 0], [0, 0, self.height, self.height, 0]

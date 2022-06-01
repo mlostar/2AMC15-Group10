@@ -173,7 +173,7 @@ def parse_config(file):
                             raise ValueError('Wrong order in config file! Start with size!')
                         else:
                             if typ == 'obstacle':
-                                grid.put_obstacle(*ast.literal_eval(coords))
+                                  grid.put_obstacle(*ast.literal_eval(coords))
                             elif typ == 'goal':
                                 grid.put_goal(*ast.literal_eval(coords))
                             else:

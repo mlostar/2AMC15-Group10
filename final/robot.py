@@ -18,7 +18,7 @@ class Robot:
 
         self.pos = init_position
         self.bounding_box = None
-        self.history = []
+        self.history = []  # TODO: do we even need this?
         self.set_position(*init_position)
 
     def set_position(self, start_x=0, start_y=0):
