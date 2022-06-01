@@ -44,7 +44,7 @@ class Grid:
     def spawn_robots(self, robots, starting_positions):
         self.robots = robots
         for i, robot in enumerate(robots):
-            robot.spawn(self, *starting_positions[i])
+            robot.set_position(self)
             robot_box = robot.history[-1]
             self.robot_lines.append(plt.plot([robot_box.x1, robot_box.x2, robot_box.x2, robot_box.x1, robot_box.x1],
                                              [robot_box.y1, robot_box.y1, robot_box.y2, robot_box.y2, robot_box.y1],
