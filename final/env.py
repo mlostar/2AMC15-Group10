@@ -11,9 +11,6 @@ from final.grid import Grid
 from final.robot import Robot
 from final.util import parse_config
 
-plt.ion()
-plt.figure()
-plt.show()
 
 
 class FloorCleaning(Env):
@@ -43,7 +40,7 @@ class FloorCleaning(Env):
             "regular": 0.,
             "goal": 1.,
         }
-
+        self.rendering_init = False
         assert self._grid.is_in_bounds(
             self._robot.bounding_box.x1,
             self._robot.bounding_box.y1,
@@ -140,6 +137,11 @@ class FloorCleaning(Env):
         return nearest_distance_n, nearest_distance_e, nearest_distance_s, nearest_distance_w
 
     def render(self, mode="human"):
+        if self.rendering_init == False:
+            plt.ion()
+            plt.figure()
+            plt.show()
+            self.rendering_init = True
         plt.gcf()
         plt.plot(*self._grid.get_border_coords(), color='black')
 
