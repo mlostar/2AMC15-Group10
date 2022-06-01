@@ -85,7 +85,6 @@ class FloorCleaning(Env):
             del new_box
             self._robot.pos = new_pos
             self._robot.bounding_box.update_pos(*self._robot.pos)
-            self._robot.history.append(self._robot.bounding_box)
 
             # What to do if the robot made a valid move with enough battery:
             if self._grid.check_delete_goals(self._robot) and len(self._grid.goals) == 0:
@@ -154,7 +153,7 @@ class FloorCleaning(Env):
         for ob in self._grid.obstacles:
             plt.plot([ob.x1, ob.x2, ob.x2, ob.x1, ob.x1], [ob.y1, ob.y1, ob.y2, ob.y2, ob.y1], color='black')
 
-        robot_box = self._robot.history[-1]
+        robot_box = self._robot.bounding_box
         plt.plot(
             [robot_box.x1, robot_box.x2, robot_box.x2, robot_box.x1, robot_box.x1],
             [robot_box.y1, robot_box.y1, robot_box.y2, robot_box.y2, robot_box.y1],
