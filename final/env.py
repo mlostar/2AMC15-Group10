@@ -1,23 +1,24 @@
 from copy import deepcopy
+from pathlib import Path
 from typing import Tuple, Optional, Union
 
 import numpy as np
 from gym import Env
 from gym import spaces
-from gym.core import ActType, ObsType
 from matplotlib import pyplot as plt
 
 from final.grid import Grid
 from final.robot import Robot
 from final.util import parse_config
 
-plt.ion()
-plt.figure()
-plt.show()
-
 
 class FloorCleaning(Env):
-    def __init__(self, grid: Grid, robot: Robot):
+    # TODO: perhaps it's best to not pass the grid and robot objects on construction
+    def __init__(self, config):
+        self.rendering_init = False
+        grid = config["grid"]
+        robot = config["robot"]
+
         self._original_grid = deepcopy(grid)
         self._original_robot = deepcopy(robot)
         self._robot = robot
@@ -52,7 +53,7 @@ class FloorCleaning(Env):
         )
         assert not self._grid.is_blocked(robot.bounding_box)
 
-    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
+    def step(self, action):
         assert self._robot.alive
         done = False
 
@@ -140,6 +141,12 @@ class FloorCleaning(Env):
         return nearest_distance_n, nearest_distance_e, nearest_distance_s, nearest_distance_w
 
     def render(self, mode="human"):
+        if self.rendering_init == False:
+            plt.ion()
+            plt.figure()
+            plt.show()
+            self.rendering_init = True
+
         plt.gcf()
         plt.plot(*self._grid.get_border_coords(), color='black')
 
@@ -164,25 +171,17 @@ class FloorCleaning(Env):
         plt.pause(0.0001)
         plt.clf()
 
-    def reset(
-            self,
-            *,
-            seed: Optional[int] = None,
-            return_info: bool = False,
-            options: Optional[dict] = None,
-    ) -> Union[ObsType, Tuple[ObsType, dict]]:
-        super().reset(seed=seed)
-
+    def reset(self):
         # TODO: select a random location for the robot
-        self.__init__(grid=self._original_grid, robot=self._original_robot)
+        self.__init__(dict(grid=self._original_grid, robot=self._original_robot))
 
-        return self._make_observation() if not return_info else (self._make_observation(), {})
+        return self._make_observation()
 
 
 if __name__ == "__main__":
     from gym.utils.env_checker import check_env
 
     # Check if the environment conforms to the Gym API
-    grid = parse_config('example.grid')
+    grid = parse_config(Path("assets")/"example.grid")
     robot = Robot(init_position=(0, 0))
     check_env(FloorCleaning(grid, robot))

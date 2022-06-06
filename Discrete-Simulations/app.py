@@ -199,7 +199,7 @@ def handle_browser_update(json):
     robot_alg = json['robot_file'].split('.py')[0]
     if not occupied:
         occupied = True
-        # Checking if the selected robot algorithm is indeed imported, if file changed since starting app.py,
+        # Checking if the selected robot algorithm is indeed imported, if file changed since starting gameplay.py,
         # throw error.
         try:
             for robot in robots:

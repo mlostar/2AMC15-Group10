@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 from final.env import FloorCleaning
@@ -6,9 +8,9 @@ from final.util import parse_config
 import logging
 
 
-grid = parse_config('example.grid')
+grid = parse_config(Path(".").parent/"assets"/"example.grid")
 robot = Robot(init_position=(0, 8))
-env = FloorCleaning(grid, robot)
+env = FloorCleaning(dict(grid=grid, robot=robot))
 
 
 for e in range(10):
