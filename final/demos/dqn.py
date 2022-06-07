@@ -36,7 +36,7 @@ for e in range(10):
         move = trainer.compute_action(obs)
         obs, reward, has_ended, info = env.step(move)
         env.render()
-        print(f"move: {move/(2*np.pi)*360}, reward: {reward}")
+        print(f"move: {move*360}, reward: {reward}")
 
         if has_ended:
             print(f"Game over: {info['reason']}")
