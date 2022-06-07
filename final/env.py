@@ -143,7 +143,7 @@ class FloorCleaning(Env):
     def render(self, mode="human"):
         if self.rendering_init == False:
             plt.ion()
-            plt.figure()
+            plt.gcf()
             plt.show()
             self.rendering_init = True
 
