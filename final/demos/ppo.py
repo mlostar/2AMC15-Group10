@@ -1,14 +1,11 @@
 from pathlib import Path
 
 import numpy as np
-from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo import PPOTrainer
 
-from final.env import FloorCleaning
-from final.robot import Robot
-from final.util import parse_config
-import logging
-
+from final.env.env import FloorCleaning
+from final.env.robot import Robot
+from final.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(parent_path/"assets"/"example.grid")
