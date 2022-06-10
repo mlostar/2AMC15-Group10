@@ -1,9 +1,4 @@
-from copy import deepcopy
-import random
-
-import numpy as np
-
-from final.grid import Square
+from final.env.grid import Square
 
 
 class Robot:

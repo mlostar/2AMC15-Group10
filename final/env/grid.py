@@ -1,3 +1,5 @@
+from typing import List
+
 from matplotlib import pyplot as plt
 
 
@@ -6,8 +8,8 @@ class Grid:
         self.p_random = p_random
         self.width = width
         self.height = height
-        self.obstacles = []
-        self.goals = []
+        self.obstacles:List[Square] = []
+        self.goals: List[Square] = []
         self.robot = None
 
     def is_in_bounds(self, x, y, size_x, size_y):

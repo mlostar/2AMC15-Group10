@@ -1,15 +1,13 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Tuple, Optional, Union
 
 import numpy as np
 from gym import Env
 from gym import spaces
 from matplotlib import pyplot as plt
 
-from final.grid import Grid
-from final.robot import Robot
-from final.util import parse_config
+from final.env.robot import Robot
+from final.utils.parsing import parse_config
 
 
 class FloorCleaning(Env):
@@ -177,11 +175,15 @@ class FloorCleaning(Env):
 
         return self._make_observation()
 
+    @property
+    def grid(self):
+        return deepcopy(self._grid)
+
 
 if __name__ == "__main__":
     from gym.utils.env_checker import check_env
 
     # Check if the environment conforms to the Gym API
-    grid = parse_config(Path("assets")/"example.grid")
+    grid = parse_config(Path("../assets") / "example.grid")
     robot = Robot(init_position=(0, 0))
     check_env(FloorCleaning(grid, robot))

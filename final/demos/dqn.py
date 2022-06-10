@@ -1,14 +1,11 @@
 from pathlib import Path
 
-import numpy as np
 from ray.rllib.agents.dqn import DQNTrainer
-from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune import register_env
 
-from final.env import FloorCleaning
-from final.robot import Robot
-from final.util import parse_config
-import logging
+from final.env.env import FloorCleaning
+from final.env.robot import Robot
+from final.utils.parsing import parse_config
 
 from final.wrappers.descretiser import Discretiser
 
