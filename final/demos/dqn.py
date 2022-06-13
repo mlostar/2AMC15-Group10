@@ -17,7 +17,7 @@ robot = Robot(init_position=(0, 8))
 register_env('FloorCleaning', lambda env_config: Discretiser(FloorCleaning({"robot": robot, "grid": grid}), n_splits=10))
 trainer = DQNTrainer(env="FloorCleaning")
 
-checkpoint_path = None
+
 for _ in range(3):
     print(trainer.train())
     checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
