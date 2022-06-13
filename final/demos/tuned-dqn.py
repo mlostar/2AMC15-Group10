@@ -14,11 +14,12 @@ from final.utils.parsing import parse_config
 from final.wrappers.descretiser import Discretiser
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(parent_path/"assets"/"example.grid")
+grid = parse_config(parent_path / "assets" / "example.grid")
 
 
 N_EPOCHS = 3
 MAX_EVAL_STEPS = 100
+
 
 def train(config):
     robot = Robot(init_position=(0, 8))
@@ -42,15 +43,16 @@ def train(config):
 
 parameters = {"gamma": uniform(0, 1.0),
               "lr": uniform(0.0001, 0.1),
+              #"num_workers": 0,
               "horizon": 300}
 analysis = run(
     train,
     search_alg=BayesOptSearch(metric="_metric", mode="max"),
     scheduler=ASHAScheduler(metric="_metric", mode="max"),
     config=parameters,
-    time_budget_s=300,
+    # time_budget_s=300,
     num_samples=3,
-    resources_per_trial={'cpu': 7, 'gpu': 1},
+    resources_per_trial={'cpu': 8, 'gpu': 1},
 )
 analysis_df = analysis.results_df
 

@@ -19,8 +19,8 @@ class FloorCleaning(Env):
 
         self._original_grid = deepcopy(grid)
         self._original_robot = deepcopy(robot)
-        self._robot = robot
-        self._grid = grid
+        self._robot = deepcopy(robot)
+        self._grid = deepcopy(grid)
         self.observation_space = spaces.Dict({
             "distances to borders": spaces.Box(
                 low=0,
