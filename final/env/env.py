@@ -85,14 +85,23 @@ class FloorCleaning(Env):
             self._robot.pos = new_pos
             self._robot.bounding_box.update_pos(*self._robot.pos)
 
-            # What to do if the robot made a valid move with enough battery:
-            if self._grid.check_delete_goals(self._robot) and len(self._grid.goals) == 0:
+            # What to do if the robot made a valid move, but there were no more goals to begin with
+            n_remaining_goals = len(self._grid.goals)
+            if n_remaining_goals == 0:
                 self._robot.alive = False
-                return self._make_observation(), self.reward_structure["goal"], True, {"reason": "goals cleared"}
-            elif self._grid.check_delete_goals(self._robot) and len(self._grid.goals) > 0:
-                return self._make_observation(), self.reward_structure["goal"], False, {}
-            elif not self._grid.check_delete_goals(self._robot):
-                return self._make_observation(), self.reward_structure["regular"], False, {}
+                raise AssertionError("Tried to make a step when all of the goals are cleared.")
+
+            # What to do if the robot made a valid move and there were still valid goals left
+            intersected_goals = self._grid.get_intersected_goals(self._robot)
+            self._grid.remove_goals(intersected_goals)
+            if len(intersected_goals) == n_remaining_goals:
+                return self._make_observation(), self.reward_structure["goal"], True, {"reason": "goal cleared"}
+            elif n_remaining_goals > len(intersected_goals) > 0:
+                return self._make_observation(), self.reward_structure["goal"], False, {"reason": "goal cleared"}
+            elif len(intersected_goals) == 0:
+                return self._make_observation(), self.reward_structure["regular"], False, {"reason": "no intersections"}
+
+            raise AssertionError()
 
     def _make_observation(self):
         robot_center = (self._robot.bounding_box.x1 + self._robot.bounding_box.x2) / 2, \

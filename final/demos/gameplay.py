@@ -7,7 +7,7 @@ from final.env.robot import Robot
 from final.evaluation import get_cleaning_efficiency
 from final.utils.parsing import parse_config
 
-grid = parse_config(Path(".").parent/"assets"/"complex.grid")
+grid = parse_config(Path(".").parent/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 env = FloorCleaning(dict(grid=grid, robot=robot))
 

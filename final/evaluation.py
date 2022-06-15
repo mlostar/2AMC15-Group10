@@ -13,7 +13,6 @@ def get_cleaning_efficiency(env: FloorCleaning, action_maker, max_steps=math.inf
     while not done and s < max_steps:
         action = action_maker(obs)
         obs, reward, done, info = env.step(action)
-        print(action, obs, reward, done)
         s += 1
 
     final_dust_area = sum([get_area(patch) for patch in env.grid.goals])

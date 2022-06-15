@@ -5,6 +5,7 @@ from ray.rllib.agents.ppo import PPOTrainer
 
 from final.env.env import FloorCleaning
 from final.env.robot import Robot
+from final.evaluation import get_cleaning_efficiency
 from final.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
@@ -13,15 +14,18 @@ robot = Robot(init_position=(0, 8))
 
 
 trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid}})
+env = FloorCleaning(dict(robot=robot, grid=grid))
 
 checkpoint_path = None
-for _ in range(3):
+for e in range(10):
     print(trainer.train())
-    checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
+    #checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
+
+    efficiency = get_cleaning_efficiency(env, lambda o: trainer.compute_single_action(o), max_steps=100)
+    print(f"Epoch: {e} -- Efficiency: {efficiency}")
 
 
-trainer.restore(checkpoint_path)
-env = FloorCleaning(dict(robot=robot, grid=grid))
+#trainer.restore(checkpoint_path)
 for e in range(10):
     obs = env.reset()
     env.render()

@@ -36,22 +36,18 @@ class Grid:
                 goal = Square(x + size_x - (size_x % sx), x + size_x, y + (y_i*sy), y + (y_i*sy) + sy)
                 self.goals.append(goal)
 
-        if size_y % sy != 0:
-            for x_i in np.arange(size_x // sx):
-                goal = Square(x + (x_i*sx), x + (x_i*sx) + sx, y + size_y - (size_y % sy), y + size_y)
-                self.goals.append(goal)
+    def get_intersected_goals(self, robot):
+        intersected_goals = []
 
-        if size_y % sy != 0 and size_x % sx != 0:
-            goal = Square(x + size_x - (size_x % sx), x + size_x, y + size_y - (size_y % sy), y + size_y)
-            self.goals.append(goal)
-
-
-    def check_delete_goals(self, robot):
         for i, goal in enumerate(self.goals):
             if goal.intersect(robot.bounding_box):
-                self.goals.remove(goal)
-                return True
-        return False
+                intersected_goals.append(goal)
+
+        return intersected_goals
+
+    def remove_goals(self, goals):
+        for i, goal in enumerate(goals):
+            self.goals.remove(goal)
 
     def is_blocked(self, box: "Square"):
         return any([ob.intersect(box) for ob in self.obstacles])
