@@ -184,6 +184,6 @@ if __name__ == "__main__":
     from gym.utils.env_checker import check_env
 
     # Check if the environment conforms to the Gym API
-    grid = parse_config(Path("../assets") / "example.grid")
+    grid = parse_config(Path("../assets") / "complex.grid")
     robot = Robot(init_position=(0, 0))
     check_env(FloorCleaning(grid, robot))

@@ -8,7 +8,7 @@ from final.env.robot import Robot
 from final.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(parent_path/"assets"/"example.grid")
+grid = parse_config(parent_path/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 
 

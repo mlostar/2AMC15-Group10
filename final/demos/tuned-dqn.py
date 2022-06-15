@@ -14,7 +14,7 @@ from final.utils.parsing import parse_config
 from final.wrappers.descretiser import Discretiser
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(parent_path / "assets" / "example.grid")
+grid = parse_config(parent_path / "assets" / "complex.grid")
 
 
 N_EPOCHS = 3
@@ -31,14 +31,14 @@ def train(config):
 
     for _ in range(N_EPOCHS):
         trainer.train()
-        checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
+        # checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
 
         cleaning_efficiency = get_cleaning_efficiency(
             env=env,
             action_maker=trainer.compute_single_action,
             max_steps=MAX_EVAL_STEPS
         )
-        report(cleaning_efficiency)
+        yield dict(efficiency=cleaning_efficiency)
 
 
 parameters = {"gamma": uniform(0, 1.0),
@@ -47,16 +47,16 @@ parameters = {"gamma": uniform(0, 1.0),
               "horizon": 300}
 analysis = run(
     train,
-    search_alg=BayesOptSearch(metric="_metric", mode="max"),
-    scheduler=ASHAScheduler(metric="_metric", mode="max"),
+    search_alg=BayesOptSearch(metric="efficiency", mode="max"),
+    scheduler=ASHAScheduler(metric="efficiency", mode="max"),
     config=parameters,
-    # time_budget_s=300,
-    num_samples=3,
+    time_budget_s=3600,
+    num_samples=100,
     resources_per_trial={'cpu': 8, 'gpu': 1},
 )
 analysis_df = analysis.results_df
 
 print(analysis_df)
 parameter_names = list(parameters.keys())
-fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="_metric")
+fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
 fig.show()

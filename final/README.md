@@ -10,7 +10,7 @@ To run the code, install the requirements and execute the app.py!
 tuned-dqn.py contains an example of hyperparameter tuning. Things are not so simple here though. 
 Firstly, make sure to install the necessary requirements (see requirements.txt). Do not pass the time budget.
 This seems to result flaky hang-ups. It is a very neat feature and it works in general, but there is something
-special with out code unfortunately :(
+special without code unfortunately :(
 
 After the tuning is done, a table will be printed alongside a plotly visualisation for the first 2 axis of 
 the hyperparameter space. An alternative way to follow the tuning is using tensorboard.

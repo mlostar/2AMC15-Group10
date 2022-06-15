@@ -10,7 +10,7 @@ from final.utils.parsing import parse_config
 from final.wrappers.descretiser import Discretiser
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(parent_path/"assets"/"example.grid")
+grid = parse_config(parent_path/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 
 
@@ -18,7 +18,7 @@ register_env('FloorCleaning', lambda env_config: Discretiser(FloorCleaning({"rob
 trainer = DQNTrainer(env="FloorCleaning")
 
 
-for _ in range(3):
+for _ in range(100):
     print(trainer.train())
     checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
 
