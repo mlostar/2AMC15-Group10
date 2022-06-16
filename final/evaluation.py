@@ -18,10 +18,8 @@ def get_cleaning_efficiency(env: FloorCleaning, action_maker, max_steps=math.inf
     final_dust_area = sum([get_area(patch) for patch in env.grid.goals])
     diff_dust_area = initial_dust_area - final_dust_area
 
-    if initial_dust_area == 0 and s == 0:
-        return 1.0
-    elif s == 0:
-        return 0.0
+    if initial_dust_area == 0 or s == 0:
+        raise AssertionError()
     else:
         return diff_dust_area/s
 

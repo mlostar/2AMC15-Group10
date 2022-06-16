@@ -13,11 +13,18 @@ grid = parse_config(parent_path/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 
 
-trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid}})
+trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
+                                                "num_workers": 0,
+                                                # "gamma": 0.830490,
+                                                # "lr": 0.023585,
+                                                "horizon": 300,
+                                                "grad_clip": 4.0,
+                                                "model": {"fcnet_hiddens": [256],
+                                                          "fcnet_activation": "relu"}})
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
 checkpoint_path = None
-for e in range(10):
+for e in range(20):
     print(trainer.train())
     #checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
 

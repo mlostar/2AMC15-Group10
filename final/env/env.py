@@ -53,6 +53,7 @@ class FloorCleaning(Env):
 
     def step(self, action):
         assert self._robot.alive
+        assert self.action_space.contains(action)
         done = False
 
         # Compute the move vector
@@ -110,9 +111,9 @@ class FloorCleaning(Env):
         distances_to_obstacles = self._get_distances_from_reference(
             reference_point=robot_center,
             squares=self._grid.obstacles,
-            fallback_n=robot_center[1],
+            fallback_n=self._grid.height - robot_center[1],
             fallback_e=self._grid.width - robot_center[0],
-            fallback_s=self._grid.height - robot_center[1],
+            fallback_s=robot_center[1],
             fallback_w=robot_center[0]
         )
         # Compute the distances to patches. If there are none, the sensor would return the maximum visible distance.
@@ -136,10 +137,10 @@ class FloorCleaning(Env):
                        if ob.y1 <= reference_point[1] <= ob.y2 and ob.x1 >= reference_point[0]]
         distances_w = [reference_point[0] - ob.x2 for ob in squares
                        if ob.y1 <= reference_point[1] <= ob.y2 and ob.x2 <= reference_point[0]]
-        distances_n = [reference_point[1] - ob.y2 for ob in squares
-                       if ob.x1 <= reference_point[0] <= ob.x2 and ob.y2 <= reference_point[1]]
-        distances_s = [ob.y1 - reference_point[1] for ob in squares
+        distances_n = [ob.y1 - reference_point[1] for ob in squares
                        if ob.x1 <= reference_point[0] <= ob.x2 and ob.y1 >= reference_point[1]]
+        distances_s = [reference_point[1] - ob.y2 for ob in squares
+                       if ob.x1 <= reference_point[0] <= ob.x2 and ob.y2 <= reference_point[1]]
         nearest_distance_e = fallback_e if not distances_e else min(distances_e)
         nearest_distance_w = fallback_w if not distances_w else min(distances_w)
         nearest_distance_n = fallback_n if not distances_n else min(distances_n)
