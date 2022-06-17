@@ -11,7 +11,8 @@ class Grid:
         self.height = height
         self.obstacles:List[Square] = []
         self.goals: List[Square] = []
-        self.robot = None
+        self.dirt_size_x: float = 0.5
+        self.dirt_size_y: float = 0.5
 
     def is_in_bounds(self, x, y, size_x, size_y):
         return x >= 0 and x + size_x <= self.width and y >= 0 and y + size_y <= self.height
@@ -21,11 +22,15 @@ class Grid:
         ob = Square(x, x + size_x, y, y + size_y)
         self.obstacles.append(ob)
 
+    def set_dirt_size(self, dirt_size_x, dirt_size_y):
+        self.dirt_size_x = dirt_size_x
+        self.dirt_size_y = dirt_size_y
+
     def put_goal(self, x, y, size_x, size_y):
         assert self.is_in_bounds(x, y, size_x, size_y)
         # We split the dirt tile into sx by sy blocks
-        sx = 1.0
-        sy = 1.0
+        sx = self.dirt_size_x
+        sy = self.dirt_size_y
         for x_i in np.arange(size_x//sx):
             for y_i in np.arange(size_y//sy):
                 goal = Square(x+(x_i*sx), x+(x_i*sx)+sx, y+(y_i*sy), y+(y_i*sy)+sy)
@@ -44,6 +49,35 @@ class Grid:
         if size_y % sy != 0 and size_x % sx != 0:
             goal = Square(x + size_x - (size_x % sx), x + size_x, y + size_y - (size_y % sy), y + size_y)
             self.goals.append(goal)
+
+    def put_random_goal(self, x, y, size_x, size_y):
+        assert self.is_in_bounds(x, y, size_x, size_y)
+        # We split the dirt tile into sx by sy blocks
+        rand_size_x = np.random.rand() * size_x
+        rand_size_y = np.random.rand() * size_y
+        rand_x = x+np.random.rand()*(size_x - rand_size_x)
+        rand_y = y+np.random.rand()*(size_y - rand_size_y)
+        self.put_goal(rand_x, rand_y, rand_size_x, rand_size_y)
+
+    def put_small_random_goal(self, x, y, size_x, size_y):
+        assert self.is_in_bounds(x, y, size_x, size_y)
+        # We split the dirt tile into sx by sy blocks
+        sx = 1.0
+        sy = 1.0
+        for x_i in np.arange(size_x // sx):
+            for y_i in np.arange(size_y // sy):
+                self.put_random_goal(x + (x_i * sx),  y + (y_i * sy), sx, sy)
+        # Then add all remainder goals
+        if size_x % sx != 0:
+            for y_i in np.arange(size_y // sy):
+                self.put_random_goal(x + size_x - (size_x % sx), y + (y_i * sy), size_x % sx, sy)
+
+        if size_y % sy != 0:
+            for x_i in np.arange(size_x // sx):
+                self.put_random_goal(x + (x_i * sx), y + size_y - (size_y % sy), sx, size_y % sy)
+
+        if size_y % sy != 0 and size_x % sx != 0:
+            self.put_random_goal(x + size_x - (size_x % sx), y + size_y - (size_y % sy), size_x % sx, size_y % sy)
 
     def get_intersected_goals(self, robot):
         intersected_goals = []

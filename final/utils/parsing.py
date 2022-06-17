@@ -21,10 +21,16 @@ def parse_config(file):
                         if not grid:
                             raise ValueError('Wrong order in config file! Start with size!')
                         else:
-                            if typ == 'obstacle':
+                            if typ == 'dirt_size':
+                                grid.set_dirt_size(*ast.literal_eval(coords))
+                            elif typ == 'obstacle':
                                 grid.put_obstacle(*ast.literal_eval(coords))
                             elif typ == 'goal':
                                 grid.put_goal(*ast.literal_eval(coords))
+                            elif typ == 'rand_goal':
+                                grid.put_random_goal(*ast.literal_eval(coords))
+                            elif typ == 'small_goal':
+                                grid.put_small_goal(*ast.literal_eval(coords))
                             else:
                                 raise ValueError(f"Unkown type '{typ}'.")
             return grid
