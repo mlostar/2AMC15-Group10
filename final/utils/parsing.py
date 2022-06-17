@@ -23,6 +23,10 @@ def parse_config(file):
                         else:
                             if typ == 'dirt_size':
                                 grid.set_dirt_size(*ast.literal_eval(coords))
+                            elif typ == 'p_dirt':
+                                grid.set_p_dirt(*ast.literal_eval(coords))
+                            elif typ == 'small_goal_size':
+                                grid.set_small_goal_size(*ast.literal_eval(coords))
                             elif typ == 'obstacle':
                                 grid.put_obstacle(*ast.literal_eval(coords))
                             elif typ == 'goal':

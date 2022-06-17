@@ -13,6 +13,10 @@ class Grid:
         self.goals: List[Square] = []
         self.dirt_size_x: float = 0.5
         self.dirt_size_y: float = 0.5
+        self.is_p_dirt = False
+        self.p_dirt = 1.0
+        self.small_goal_size_x = 1.0
+        self.small_goal_size_y = 1.0
 
     def is_in_bounds(self, x, y, size_x, size_y):
         return x >= 0 and x + size_x <= self.width and y >= 0 and y + size_y <= self.height
@@ -25,6 +29,14 @@ class Grid:
     def set_dirt_size(self, dirt_size_x, dirt_size_y):
         self.dirt_size_x = dirt_size_x
         self.dirt_size_y = dirt_size_y
+
+    def set_p_dirt(self, is_p_dirt, p_dirt=0.8):
+        self.is_p_dirt = is_p_dirt
+        self.p_dirt = p_dirt
+
+    def set_small_goal_size(self, small_goal_sx, small_goal_sy):
+        self.small_goal_size_x = small_goal_sx
+        self.small_goal_size_y = small_goal_sy
 
     def put_goal(self, x, y, size_x, size_y):
         assert self.is_in_bounds(x, y, size_x, size_y)
@@ -57,13 +69,17 @@ class Grid:
         rand_size_y = np.random.rand() * size_y
         rand_x = x+np.random.rand()*(size_x - rand_size_x)
         rand_y = y+np.random.rand()*(size_y - rand_size_y)
-        self.put_goal(rand_x, rand_y, rand_size_x, rand_size_y)
+        if self.p_dirt:
+            if np.random.rand() <= self.p_dirt:
+                self.put_goal(rand_x, rand_y, rand_size_x, rand_size_y)
+        else:
+            self.put_goal(rand_x, rand_y, rand_size_x, rand_size_y)
 
-    def put_small_random_goal(self, x, y, size_x, size_y):
+    def put_small_goal(self, x, y, size_x, size_y):
         assert self.is_in_bounds(x, y, size_x, size_y)
         # We split the dirt tile into sx by sy blocks
-        sx = 1.0
-        sy = 1.0
+        sx = self.small_goal_size_x
+        sy = self.small_goal_size_y
         for x_i in np.arange(size_x // sx):
             for y_i in np.arange(size_y // sy):
                 self.put_random_goal(x + (x_i * sx),  y + (y_i * sy), sx, sy)
