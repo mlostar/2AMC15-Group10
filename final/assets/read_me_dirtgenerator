@@ -1,0 +1,22 @@
+dirt_size = (x_size_patch, y_size_patch)
+    defines the dirt patch sizes
+goal(x_start, y_start, x_size, y_size)
+    puts a dirt square in dirt patches
+rand_goal(x_start, y_start, x_size, y_size)
+    puts a dirt square with random size rand_size = (0 - x_size/y_size)
+    at a random starting location within rand_start = (x_start, x_start-rand_size)
+small_goal_size = (x_size, y_size)
+    defines the small goals size
+small_goal(x_start, y_start, x_size, y_size)
+    puts (x_size / small_goal_size) number of rand_goal in size small_goal_size
+p_dirt = (is_p_dirt: BOOL, p_dirt: float)
+    rand_goal have a p_dirt chance of appearing
+    default is_p_dirt = False, p_dirt = 0.8
+
+So if you have all options on:
+it makes puts dirt randomly of the size [small_goal_size] with chance [p_dirt]
+which are divided in patches of [dirt_size]
+
+see grid files for examples
+grid files in order of complexity (low to high):
+complex, complex_p_dirt, dirt_small, dirt_small_p_dirt.grid
