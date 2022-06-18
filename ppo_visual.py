@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import numpy as np
-from ray.rllib.agents.a3c import A3CTrainer
+from ray.rllib.agents.ppo import PPOTrainer
 
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
@@ -13,12 +13,14 @@ grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
 robot = Robot(init_position=(0, 8))
 
 
-trainer = A3CTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
-                                                # Learning rate
-                                                "lr": 0.0001,
-                                                # Entropy coefficient
-                                                "entropy_coeff": 0.01})
-
+trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
+                                                "num_workers": 0,
+                                                # "gamma": 0.830490,
+                                                # "lr": 0.023585,
+                                                "horizon": 300,
+                                                "grad_clip": 4.0,
+                                                "model": {"fcnet_hiddens": [256],
+                                                          "fcnet_activation": "relu"}})
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
 checkpoint_path = None
