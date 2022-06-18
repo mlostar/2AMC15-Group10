@@ -9,7 +9,7 @@ from final.evaluation import get_cleaning_efficiency
 from final.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(parent_path/"assets"/"simple.grid")
+grid = parse_config(parent_path/"assets"/"complex.grid")
 robot = Robot(init_position=(0, 8))
 
 
