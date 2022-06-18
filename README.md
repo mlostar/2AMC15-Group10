@@ -25,6 +25,11 @@ Local Ray cluster can be started using the following command.
 ray start --head
 ```
 
+To terminate the Ray runtime.
+```
+ray stop
+```
+
 Run the a3c tuning.
 ```
 python a3c_tune.py
