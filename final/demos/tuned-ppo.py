@@ -60,10 +60,6 @@ analysis = run(
     # scheduler=ASHAScheduler(metric="efficiency", mode="max"),
     # search_alg=BayesOptSearch(metric="efficiency", mode="max"),
     search_alg=TuneBOHB(metric="efficiency", mode="max"),
-    scheduler=HyperBandForBOHB(
-        time_attr="training_iteration",
-        metric="efficiency",
-        mode="max"),
     config=parameters,
     time_budget_s=3600,
     num_samples=-1,
