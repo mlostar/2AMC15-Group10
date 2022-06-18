@@ -1,23 +1,26 @@
+import time
 from pathlib import Path
 
 import plotly.express as px
 import ray
 from ray.rllib.agents.a3c import A3CTrainer
-from ray.tune import report, run, uniform
+from ray.tune import report, run, uniform, choice
 from ray.tune.suggest.bohb import TuneBOHB
 
+import helper
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
 from helper.evaluation import get_cleaning_efficiency
 from helper.utils.parsing import parse_config
 
-parent_path = Path(".").resolve().parent
-grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
-
 N_EPOCHS = 12
 MAX_EVAL_STEPS = 100
+LOCAL_PORT = 10001
+runtime_env = {"working_dir": "./", "py_modules": [helper]}
 
-ray.init(object_store_memory=10 ** 9)
+
+parent_path = Path(".").resolve().parent
+grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
 
 
 def train(config):
@@ -36,34 +39,52 @@ def train(config):
 
         for e in range(N_EPOCHS):
             trainer.train()
-            # checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
-
             cleaning_efficiency = get_cleaning_efficiency(
                 env=env,
                 action_maker=trainer.compute_single_action,
                 max_steps=MAX_EVAL_STEPS
             )
-
         print(cleaning_efficiency)
         report(efficiency=cleaning_efficiency)
     except InterruptedError:
         print("Interrupted")
 
+@ray.remote
+def tune_search(parameters):
+    analysis = run(
+        train,
+        search_alg=TuneBOHB(metric="efficiency", mode="max"),
+        config=parameters,
+        time_budget_s=300,
+        num_samples=-1,
+        resources_per_trial={'cpu': 1},
+    )
+    
+    return analysis.results_df
 
-parameters = {"gamma": uniform(0, 1.0),
-              "lr": uniform(0.0001, 0.1)}
-analysis = run(
-    train,
-    search_alg=TuneBOHB(metric="efficiency", mode="max"),
-    config=parameters,
-    time_budget_s=3600,
-    num_samples=-1,
-    resources_per_trial={'cpu': 1},
-)
-analysis_df = analysis.results_df
-analysis_df.to_csv("a3c_results.csv", index=False)
 
-print(analysis_df)
-parameter_names = list(parameters.keys())
-fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
-fig.savefig('a3c.png')
+
+def main():
+    parameters = {"gamma": choice([0.01, 0.1, 0.5, 1.0]),
+                "lr": choice([0.01, 0.1, 0.5, 1.0])}
+
+    result = tune_search.remote(parameters)
+    analysis_df = ray.get(result)
+    
+    analysis_df.to_csv("a3c_results.csv", index=False)
+
+    parameter_names = list(parameters.keys())
+    fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
+    fig.show()
+    # TODO: Use matplotlib
+
+
+if __name__ == "__main__":
+    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=False)
+    
+    start_time = time.time()
+    main()
+
+    stop_time = time.time()
+    print("Stopping at :", stop_time)
+    print("Total elapsed time: ", stop_time - start_time)

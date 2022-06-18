@@ -23,6 +23,7 @@ kubectl -n ray port-forward service/example-cluster-ray-head 10001:10001.
 
 Set the constant LOCAL_PORT below to the local port being forwarded.
 """
+NUMBER_OF_NODES = 1
 LOCAL_PORT = 10001
 runtime_env = {"working_dir": "./", "py_modules": [helper]}
 
@@ -38,9 +39,8 @@ def train(robot, grid):
                                             "lr": 0.0001,
                                             # Entropy coefficient
                                             "entropy_coeff": 0.01})
-    print(trainer.train())
+    trainer.train()
     efficiency = get_cleaning_efficiency(env, lambda o: trainer.compute_single_action(o), max_steps=100)
-    print(f"Efficiency: {efficiency}")
     return efficiency
 
 
@@ -63,7 +63,7 @@ def wait_for_nodes(expected):
 
 
 def main():
-    wait_for_nodes(1)
+    wait_for_nodes(NUMBER_OF_NODES)
 
     result = train.remote(robot, grid)
     print(ray.get(result))
@@ -74,5 +74,5 @@ def main():
 
 
 if __name__ == "__main__":
-    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env)
+    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=False)
     main()

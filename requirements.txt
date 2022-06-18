@@ -4,3 +4,5 @@ torch
 matplotlib
 plotly
 bayesian-optimization
+tensorflow
+hpbandster
