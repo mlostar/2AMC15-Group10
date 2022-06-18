@@ -1,6 +1,6 @@
 ray[rllib]
 ray[tune]
-pytorch
+torch
 matplotlib
 plotly
 bayesian-optimization
