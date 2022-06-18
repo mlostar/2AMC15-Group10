@@ -1,6 +1,6 @@
 import ast
 
-from final.env.grid import Grid
+from helper.env.grid import Grid
 
 
 def parse_config(file):

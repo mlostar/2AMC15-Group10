@@ -3,10 +3,10 @@ from pathlib import Path
 import numpy as np
 from ray.rllib.agents.a3c import A3CTrainer
 
-from final.env.env import FloorCleaning
-from final.env.robot import Robot
-from final.evaluation import get_cleaning_efficiency
-from final.utils.parsing import parse_config
+from helper.env.env import FloorCleaning
+from helper.env.robot import Robot
+from helper.evaluation import get_cleaning_efficiency
+from helper.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(Path(".").parent/"assets"/"simple.grid")
@@ -36,7 +36,7 @@ for e in range(10):
     env.render()
 
     for s in range(1000):
-        move = trainer.compute_action(obs)
+        move = trainer.compute_single_action(obs)
         obs, reward, has_ended, info = env.step(move)
         env.render()
         print(f"move: {move/(2*np.pi)*360}, reward: {reward}")

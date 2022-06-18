@@ -6,8 +6,8 @@ from gym import Env
 from gym import spaces
 from matplotlib import pyplot as plt
 
-from final.env.robot import Robot
-from final.utils.parsing import parse_config
+from helper.env.robot import Robot
+from helper.utils.parsing import parse_config
 
 
 class FloorCleaning(Env):

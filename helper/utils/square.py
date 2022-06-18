@@ -1,4 +1,4 @@
-from final.env.grid import Square
+from helper.env.grid import Square
 
 
 def get_area(square: Square):

@@ -1,7 +1,7 @@
 import math
 
-from final.env.env import FloorCleaning
-from final.utils.square import get_area
+from helper.env.env import FloorCleaning
+from helper.utils.square import get_area
 
 
 def get_cleaning_efficiency(env: FloorCleaning, action_maker, max_steps=math.inf):
