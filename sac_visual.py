@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import numpy as np
-from ray.rllib.agents.a3c import A3CTrainer
+from ray.rllib.agents.sac import SACTrainer
 
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
@@ -9,15 +9,14 @@ from helper.evaluation import get_cleaning_efficiency
 from helper.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
+grid = parse_config(Path(".").parent/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 
 
-trainer = A3CTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
+trainer = SACTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                 # Learning rate
                                                 "lr": 0.0001,
-                                                # Entropy coefficient
-                                                "entropy_coeff": 0.01})
+                                                "learning_starts": 150})
 
 env = FloorCleaning(dict(robot=robot, grid=grid))
 

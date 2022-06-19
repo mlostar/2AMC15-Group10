@@ -1,8 +1,8 @@
 ray[rllib]
 ray[tune]
-torch
 matplotlib
 plotly
 bayesian-optimization
 tensorflow
 hpbandster
+tensorflow_probability

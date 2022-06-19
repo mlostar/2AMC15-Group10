@@ -66,7 +66,9 @@ def main():
     parameters = {"lambda": uniform(0.5, 1),
                 "sgd_minibatch_size": choice([32, 64, 128]),
                 "lr": uniform(0.0001, 0.001),
-                "model": {"fcnet_hiddens": [choice([32, 64, 128])], "fcnet_activation": "relu"}
+                "model": {"fcnet_hiddens": [choice([32, 64, 128])], "fcnet_activation": "relu"},
+                "kl_coeff": uniform(0.1, 0.5),
+                "kl_target": uniform(0.001, 0.02)
                 }
 
     analysis_df = tune_search(parameters)
