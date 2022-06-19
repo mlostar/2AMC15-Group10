@@ -7,16 +7,19 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune import report, run, uniform, choice
 from ray.tune.suggest.bohb import TuneBOHB
 
+import helper
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
 from helper.evaluation import get_cleaning_efficiency
 from helper.utils.parsing import parse_config
 
 
-N_EPOCHS = 12
+N_EPOCHS = 1
 MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
-OBJECT_STORE_MEMORY = 10 ** 9
+runtime_env = {"working_dir": "./", "py_modules": [helper]}
+
+
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
@@ -51,12 +54,13 @@ def train(config):
     except InterruptedError:
         print("Interrupted")
 
+@ray.remote
 def tune_search(parameters):
     analysis = run(
         train,
         search_alg=TuneBOHB(metric="efficiency", mode="max"),
         config=parameters,
-        time_budget_s=3600,
+        time_budget_s=30,
         num_samples=-1,
         resources_per_trial={'cpu': 2},
     )
@@ -67,7 +71,8 @@ def main():
     parameters = {"gamma": uniform(0, 1.0),
               "lr": uniform(0.0001, 0.1)}
 
-    analysis_df = tune_search(parameters)
+    result = tune_search.remote(parameters)
+    analysis_df = ray.get(result)
     
     analysis_df.to_csv("ppo_results.csv", index=False)
 
@@ -77,7 +82,7 @@ def main():
     # TODO: Use matplotlib
 
 if __name__ == "__main__":
-    ray.init(object_store_memory=OBJECT_STORE_MEMORY)
+    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=False)
     
     start_time = time.time()
     main()

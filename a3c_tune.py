@@ -7,7 +7,6 @@ from ray.rllib.agents.a3c import A3CTrainer
 from ray.tune import report, run, uniform, choice
 from ray.tune.suggest.bohb import TuneBOHB
 
-import helper
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
 from helper.evaluation import get_cleaning_efficiency
@@ -16,7 +15,7 @@ from helper.utils.parsing import parse_config
 N_EPOCHS = 12
 MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
-runtime_env = {"working_dir": "./", "py_modules": [helper]}
+OBJECT_STORE_MEMORY = 10 ** 9
 
 
 parent_path = Path(".").resolve().parent
@@ -29,12 +28,8 @@ def train(config):
 
         env = FloorCleaning({"robot": robot, "grid": grid})
         trainer = A3CTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
-                                                        "num_workers": 0,
+                                                        "num_workers": 1,
                                                         "horizon": 300,
-                                                        # "framework": "torch",
-                                                        "grad_clip": 4.0,
-                                                        "model": {"fcnet_hiddens": [256],
-                                                                  "fcnet_activation": "relu"},
                                                         **config})
 
         for e in range(N_EPOCHS):
@@ -49,15 +44,14 @@ def train(config):
     except InterruptedError:
         print("Interrupted")
 
-@ray.remote
 def tune_search(parameters):
     analysis = run(
         train,
         search_alg=TuneBOHB(metric="efficiency", mode="max"),
         config=parameters,
-        time_budget_s=300,
+        time_budget_s=3600,
         num_samples=-1,
-        resources_per_trial={'cpu': 1},
+        resources_per_trial={'cpu': 2},
     )
     
     return analysis.results_df
@@ -65,11 +59,10 @@ def tune_search(parameters):
 
 
 def main():
-    parameters = {"gamma": choice([0.01, 0.1, 0.5, 1.0]),
-                "lr": choice([0.01, 0.1, 0.5, 1.0])}
+    parameters = {"entropy_coeff": uniform(0.01, 0.1),
+                "lr": uniform(0.0001, 0.1)}
 
-    result = tune_search.remote(parameters)
-    analysis_df = ray.get(result)
+    analysis_df = tune_search(parameters)
     
     analysis_df.to_csv("a3c_results.csv", index=False)
 
@@ -80,11 +73,10 @@ def main():
 
 
 if __name__ == "__main__":
-    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=False)
+    ray.init(object_store_memory=OBJECT_STORE_MEMORY)
     
     start_time = time.time()
     main()
 
     stop_time = time.time()
-    print("Stopping at :", stop_time)
-    print("Total elapsed time: ", stop_time - start_time)
+    print(f"Total elapsed time: {round(stop_time - start_time)}s")

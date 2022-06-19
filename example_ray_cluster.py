@@ -25,10 +25,10 @@ Set the constant LOCAL_PORT below to the local port being forwarded.
 """
 NUMBER_OF_NODES = 1
 LOCAL_PORT = 10001
-runtime_env = {"working_dir": "./", "py_modules": [helper]}
+runtime_env = {"working_dir": "./", "py_modules": [helper], "pip": ["tensorflow"]}
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
+grid = parse_config(Path(".").parent/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
@@ -74,5 +74,5 @@ def main():
 
 
 if __name__ == "__main__":
-    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=False)
+    ray.init(f"ray://127.0.0.1:{LOCAL_PORT}", runtime_env=runtime_env, log_to_driver=True)
     main()
