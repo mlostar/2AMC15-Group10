@@ -12,12 +12,12 @@ from helper.env.robot import Robot
 from helper.evaluation import get_cleaning_efficiency
 from helper.utils.parsing import parse_config
 
+
 N_EPOCHS = 12
 MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
 OBJECT_STORE_MEMORY = 10 ** 9
-TIME_BUDGET_S = 300
-
+TIME_BUDGET_S= 1800
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
@@ -33,13 +33,17 @@ def train(config):
                                                         **config})
 
         for e in range(N_EPOCHS):
+            print(f"Epoch: {e}")
             trainer.train()
+            # checkpoint_path = trainer.save(checkpoint_dir=parent_path/"checkpoints")
+
             cleaning_efficiency = get_cleaning_efficiency(
                 env=env,
                 action_maker=trainer.compute_single_action,
                 max_steps=MAX_EVAL_STEPS
             )
-        print(cleaning_efficiency)
+        
+        print("CLEANING EFFICIENCY: ", cleaning_efficiency)
         report(efficiency=cleaning_efficiency)
     except InterruptedError:
         print("Interrupted")
@@ -56,26 +60,24 @@ def tune_search(parameters):
     
     return analysis.results_df
 
-
-
 def main():
-    parameters = {"entropy_coeff": uniform(0.1, 0.5),
-                "lr": uniform(0.00001, 0.1),
-                "model": {"fcnet_hiddens": [choice([32, 64, 128, 256])], "fcnet_activation": "relu"}
+    parameters = {"lambda": uniform(0.5, 1),
+                "entropy_coeff": uniform(0.01, 0.1),
+                "lr": uniform(0.0001, 0.001),
+                "model": {"fcnet_hiddens": [choice([32, 64, 128])], "fcnet_activation": "relu"}
                 }
 
     analysis_df = tune_search(parameters)
     
-    analysis_df.to_csv("a3c_results.csv", index=False)
+    analysis_df.to_csv("ppo_results.csv", index=False)
 
     parameter_names = list(parameters.keys())
-    #fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
-    #fig.show()
+    # fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
+    # fig.show()
     # TODO: Use matplotlib
 
-
 if __name__ == "__main__":
-    ray.init(object_store_memory=OBJECT_STORE_MEMORY, log_to_driver=False)
+    ray.init(object_store_memory=OBJECT_STORE_MEMORY, log_to_driver=True)
     
     start_time = time.time()
     main()

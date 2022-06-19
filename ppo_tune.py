@@ -63,9 +63,10 @@ def tune_search(parameters):
     return analysis.results_df
 
 def main():
-    parameters = {"entropy_coeff": uniform(0, 0.5),
-                "lr": uniform(0.00001, 0.1),
-                "model": {"fcnet_hiddens": [choice([32, 64, 128, 256])], "fcnet_activation": "relu"}
+    parameters = {"lambda": uniform(0.5, 1),
+                "sgd_minibatch_size": choice([32, 64, 128]),
+                "lr": uniform(0.0001, 0.001),
+                "model": {"fcnet_hiddens": [choice([32, 64, 128])], "fcnet_activation": "relu"}
                 }
 
     analysis_df = tune_search(parameters)

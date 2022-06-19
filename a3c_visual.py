@@ -33,12 +33,12 @@ for e in range(20):
 #trainer.restore(checkpoint_path)
 for e in range(10):
     obs = env.reset()
-    # env.render()
+    env.render()
 
     for s in range(1000):
         move = trainer.compute_action(obs)
         obs, reward, has_ended, info = env.step(move)
-        # env.render()
+        env.render()
         print(f"move: {move/(2*np.pi)*360}, reward: {reward}")
 
         if has_ended:
