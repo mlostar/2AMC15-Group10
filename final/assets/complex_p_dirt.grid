@@ -1,5 +1,6 @@
 size = (20, 20)
 dirt_size = (0.3, 0.3)
+p_dirt = (True,)
 obstacle = (0, 12, 4, 1)
 obstacle = (6, 12, 5, 1)
 obstacle = (8, 13, 1, 7)

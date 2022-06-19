@@ -174,6 +174,11 @@ class FloorCleaning(Env):
             [robot_box.y1, robot_box.y1, robot_box.y2, robot_box.y2, robot_box.y1],
             color='blue'
         )
+        plt.grid(True)
+        plt.xlim([0, self._grid.width])  # Plot from x=0 to x=80.
+        plt.ylim([0, self._grid.height])  # Plot from y=0 to y=250.
+        plt.xticks(range(0, self._grid.width, 1))  # Put x axis ticks every 10 units.
+        plt.yticks(range(0, self._grid.height, 1))
         plt.title(f"Battery level: {str(round(self._robot.battery_lvl, 2))}")
         plt.draw()
         plt.pause(0.0001)
