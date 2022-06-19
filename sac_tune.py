@@ -6,6 +6,7 @@ import ray
 from ray.rllib.agents.sac import SACTrainer
 from ray.tune import report, run, uniform, choice
 from ray.tune.suggest.bohb import TuneBOHB
+from ray.tune.schedulers.hb_bohb import HyperBandForBOHB
 
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
@@ -14,10 +15,10 @@ from helper.utils.parsing import parse_config
 
 
 N_EPOCHS = 12
-MAX_EVAL_STEPS = 200
+MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
 OBJECT_STORE_MEMORY = 10 ** 9
-TIME_BUDGET_S= 1800
+TIME_BUDGET_S= 3600
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
@@ -29,7 +30,8 @@ def train(config):
 
         env = FloorCleaning({"robot": robot, "grid": grid})
         trainer = SACTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
-                                                        "horizon": 500,
+                                                        "horizon": 300,
+                                                        "learning_starts": 150,
                                                         **config})
 
         for e in range(N_EPOCHS):
@@ -51,23 +53,25 @@ def tune_search(parameters):
     analysis = run(
         train,
         search_alg=TuneBOHB(metric="efficiency", mode="max"),
+        scheduler=HyperBandForBOHB(metric="efficiency", mode="max", max_t=100, stop_last_trials=False),
         config=parameters,
         time_budget_s=TIME_BUDGET_S,
-        num_samples=250,
+        num_samples=-1,
         resources_per_trial={'cpu': 4},
     )
     
     return analysis.results_df
 
 def main():
-    parameters = {"learning_starts": choice([100, 150, 200]),
-                    "optimization": {
-                        "actor_learning_rate": uniform(3e-4, 3e-2),
-                        "critic_learning_rate": uniform(3e-4, 3e-2),
-                        "entropy_learning_rate": uniform(3e-4, 3e-2),
+    parameters = {"optimization": {
+                        "actor_learning_rate": uniform(3e-5, 3e-3),
+                        "critic_learning_rate": uniform(3e-5, 3e-3),
+                        "entropy_learning_rate": uniform(3e-5, 3e-3),
                     },
-                    "initial_alpha": uniform(0.9, 1.0),
+                    "initial_alpha": uniform(0.8, 1.0),
                     "tau": uniform(5e-4, 5e-2),
+                    "lr": uniform(1e-5, 1e-4),
+                    "twin_q": choice([True, False])
                     }
 
     analysis_df = tune_search(parameters)

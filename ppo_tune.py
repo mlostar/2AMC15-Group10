@@ -6,6 +6,7 @@ import ray
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune import report, run, uniform, choice
 from ray.tune.suggest.bohb import TuneBOHB
+from ray.tune.schedulers.hb_bohb import HyperBandForBOHB
 
 from helper.env.env import FloorCleaning
 from helper.env.robot import Robot
@@ -17,7 +18,7 @@ N_EPOCHS = 12
 MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
 OBJECT_STORE_MEMORY = 10 ** 9
-TIME_BUDGET_S= 1800
+TIME_BUDGET_S= 3600
 
 parent_path = Path(".").resolve().parent
 grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
@@ -31,7 +32,6 @@ def train(config):
         trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                         "num_workers": 0,
                                                         "horizon": 300,
-                                                        # "framework": "torch",
                                                         "grad_clip": 4.0,
                                                         **config})
 
@@ -54,10 +54,11 @@ def tune_search(parameters):
     analysis = run(
         train,
         search_alg=TuneBOHB(metric="efficiency", mode="max"),
+        scheduler=HyperBandForBOHB(metric="efficiency", mode="max", stop_last_trials=False),
         config=parameters,
         time_budget_s=TIME_BUDGET_S,
-        num_samples=250,
-        resources_per_trial={'cpu': 4},
+        num_samples=-1,
+        resources_per_trial={'cpu': 4}
     )
     
     return analysis.results_df
