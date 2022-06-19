@@ -16,6 +16,7 @@ N_EPOCHS = 12
 MAX_EVAL_STEPS = 100
 LOCAL_PORT = 10001
 OBJECT_STORE_MEMORY = 10 ** 9
+TIME_BUDGET_S = 300
 
 
 parent_path = Path(".").resolve().parent
@@ -28,7 +29,6 @@ def train(config):
 
         env = FloorCleaning({"robot": robot, "grid": grid})
         trainer = A3CTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
-                                                        "num_workers": 1,
                                                         "horizon": 300,
                                                         **config})
 
@@ -49,9 +49,9 @@ def tune_search(parameters):
         train,
         search_alg=TuneBOHB(metric="efficiency", mode="max"),
         config=parameters,
-        time_budget_s=3600,
-        num_samples=-1,
-        resources_per_trial={'cpu': 2},
+        time_budget_s=TIME_BUDGET_S,
+        num_samples=250,
+        resources_per_trial={'cpu': 4},
     )
     
     return analysis.results_df
@@ -59,21 +59,23 @@ def tune_search(parameters):
 
 
 def main():
-    parameters = {"entropy_coeff": uniform(0.01, 0.1),
-                "lr": uniform(0.0001, 0.1)}
+    parameters = {"entropy_coeff": uniform(0.1, 0.5),
+                "lr": uniform(0.00001, 0.1),
+                "model": {"fcnet_hiddens": [choice([32, 64, 128, 256])], "fcnet_activation": "relu"}
+                }
 
     analysis_df = tune_search(parameters)
     
     analysis_df.to_csv("a3c_results.csv", index=False)
 
     parameter_names = list(parameters.keys())
-    fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
-    fig.show()
+    #fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
+    #fig.show()
     # TODO: Use matplotlib
 
 
 if __name__ == "__main__":
-    ray.init(object_store_memory=OBJECT_STORE_MEMORY)
+    ray.init(object_store_memory=OBJECT_STORE_MEMORY, log_to_driver=False)
     
     start_time = time.time()
     main()
