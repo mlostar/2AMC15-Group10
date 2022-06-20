@@ -63,6 +63,7 @@ def tune_search(parameters):
     
     return analysis.results_df
 
+
 def main():
     parameters = {"lambda": uniform(0.5, 1),
                 "sgd_minibatch_size": choice([32, 64, 128]),
@@ -76,10 +77,6 @@ def main():
     
     analysis_df.to_csv("ppo_results.csv", index=False)
 
-    parameter_names = list(parameters.keys())
-    # fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
-    # fig.show()
-    # TODO: Use matplotlib
 
 if __name__ == "__main__":
     ray.init(object_store_memory=OBJECT_STORE_MEMORY, log_to_driver=False)

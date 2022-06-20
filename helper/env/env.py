@@ -11,7 +11,6 @@ from helper.utils.parsing import parse_config
 
 
 class FloorCleaning(Env):
-    # TODO: perhaps it's best to not pass the grid and robot objects on construction
     def __init__(self, config):
         self.rendering_init = False
         grid = config["grid"]
@@ -54,7 +53,6 @@ class FloorCleaning(Env):
     def step(self, action):
         assert self._robot.alive
         assert self.action_space.contains(action)
-        done = False
 
         # Compute the move vector
         if np.random.binomial(n=1, p=self._grid.p_random) == 1:
@@ -67,13 +65,14 @@ class FloorCleaning(Env):
         new_box = deepcopy(self._robot.bounding_box)
         new_box.update_pos(*new_pos)
 
+        # Check if the action is possible
         if self._grid.is_blocked(new_box):
             return self._make_observation(), self.reward_structure["obstacle"], False, {}
         elif not self._grid.is_in_bounds(new_pos[0], new_pos[1], self._robot.size, self._robot.size):
             return self._make_observation(), self.reward_structure["wall"], False, {}
         else:
+            # Perform the battery drain
             do_battery_drain = np.random.binomial(1, self._robot.battery_drain_p)
-
             if do_battery_drain == 1 and self._robot.battery_lvl > 0:
                 self._robot.battery_lvl -= (np.random.exponential(self._robot.battery_drain_lam))
                 if self._robot.battery_lvl <= 0:
@@ -82,6 +81,7 @@ class FloorCleaning(Env):
 
                     return self._make_observation(), self.reward_structure["regular"], True, {"reason": "battery drain"}
 
+            # Remove the temporary new bounding box
             del new_box
             self._robot.pos = new_pos
             self._robot.bounding_box.update_pos(*self._robot.pos)
@@ -95,10 +95,13 @@ class FloorCleaning(Env):
             # What to do if the robot made a valid move and there were still valid goals left
             intersected_goals = self._grid.get_intersected_goals(self._robot)
             self._grid.remove_goals(intersected_goals)
+            # The robot intersected the remaining patches
             if len(intersected_goals) == n_remaining_goals:
                 return self._make_observation(), self.reward_structure["goal"], True, {"reason": "goal cleared"}
+            # There are dust patches that are not intersected
             elif n_remaining_goals > len(intersected_goals) > 0:
                 return self._make_observation(), self.reward_structure["goal"], False, {"reason": "goal cleared"}
+            # The robot does not intersect any patches
             elif len(intersected_goals) == 0:
                 return self._make_observation(), self.reward_structure["regular"], False, {"reason": "no intersections"}
 
@@ -131,8 +134,10 @@ class FloorCleaning(Env):
             "distances to patches": np.array(distances_to_patches)
         }
 
+    # Compute the distance to squares from a given reference point
     @staticmethod
     def _get_distances_from_reference(reference_point, squares, fallback_n, fallback_e, fallback_s, fallback_w):
+        # Get the distances to squares in each of the directions
         distances_e = [ob.x1 - reference_point[0] for ob in squares
                        if ob.y1 <= reference_point[1] <= ob.y2 and ob.x1 >= reference_point[0]]
         distances_w = [reference_point[0] - ob.x2 for ob in squares
@@ -141,6 +146,8 @@ class FloorCleaning(Env):
                        if ob.x1 <= reference_point[0] <= ob.x2 and ob.y1 >= reference_point[1]]
         distances_s = [reference_point[1] - ob.y2 for ob in squares
                        if ob.x1 <= reference_point[0] <= ob.x2 and ob.y2 <= reference_point[1]]
+
+        # Get the minimum distance
         nearest_distance_e = fallback_e if not distances_e else min(distances_e)
         nearest_distance_w = fallback_w if not distances_w else min(distances_w)
         nearest_distance_n = fallback_n if not distances_n else min(distances_n)
@@ -158,6 +165,7 @@ class FloorCleaning(Env):
         plt.gcf()
         plt.plot(*self._grid.get_border_coords(), color='black')
 
+        # Plot the dust patches
         for goal in self._grid.goals:
             plt.plot(
                 [goal.x1, goal.x2, goal.x2, goal.x1, goal.x1],
@@ -165,9 +173,11 @@ class FloorCleaning(Env):
                 color='orange'
             )
 
+        # Plot the obstacles
         for ob in self._grid.obstacles:
             plt.plot([ob.x1, ob.x2, ob.x2, ob.x1, ob.x1], [ob.y1, ob.y1, ob.y2, ob.y2, ob.y1], color='black')
 
+        # Plot robot
         robot_box = self._robot.bounding_box
         plt.plot(
             [robot_box.x1, robot_box.x2, robot_box.x2, robot_box.x1, robot_box.x1],
@@ -185,7 +195,6 @@ class FloorCleaning(Env):
         plt.clf()
 
     def reset(self):
-        # TODO: select a random location for the robot
         self.__init__(dict(grid=self._original_grid, robot=self._original_robot))
 
         return self._make_observation()
@@ -201,4 +210,4 @@ if __name__ == "__main__":
     # Check if the environment conforms to the Gym API
     grid = parse_config(Path("../assets") / "complex.grid")
     robot = Robot(init_position=(0, 0))
-    check_env(FloorCleaning(grid, robot))
+    check_env(FloorCleaning(dict(grid=grid, robot=robot)))

@@ -62,6 +62,7 @@ def tune_search(parameters):
     
     return analysis.results_df
 
+
 def main():
     parameters = {"optimization": {
                         "actor_learning_rate": uniform(3e-5, 3e-3),
@@ -78,10 +79,6 @@ def main():
     
     analysis_df.to_csv("sac_results.csv", index=False)
 
-    parameter_names = list(parameters.keys())
-    # fig = px.scatter(analysis_df, x=f"config.{parameter_names[0]}", y=f"config.{parameter_names[1]}", color="efficiency")
-    # fig.show()
-    # TODO: Use matplotlib
 
 if __name__ == "__main__":
     ray.init(object_store_memory=OBJECT_STORE_MEMORY, log_to_driver=False)

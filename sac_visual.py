@@ -13,6 +13,7 @@ grid = parse_config(Path(".").parent/"assets"/"simple.grid")
 robot = Robot(init_position=(0, 8))
 
 
+# Initialise the trainer and the environment
 trainer = SACTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                 # Learning rate
                                                 "lr": 0.0001,
@@ -20,6 +21,7 @@ trainer = SACTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "
 
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
+# Train the model
 checkpoint_path = None
 for e in range(20):
     print(trainer.train())
@@ -28,7 +30,7 @@ for e in range(20):
     efficiency = get_cleaning_efficiency(env, lambda o: trainer.compute_single_action(o), max_steps=100)
     print(f"Epoch: {e} -- Efficiency: {efficiency}")
 
-
+# Play the environment with a visualisation
 #trainer.restore(checkpoint_path)
 for e in range(10):
     obs = env.reset()

@@ -13,6 +13,7 @@ grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
 robot = Robot(init_position=(0, 8))
 
 
+# Initialise the trainer and the environment
 trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                 "num_workers": 0,
                                                 # "gamma": 0.830490,
@@ -23,6 +24,7 @@ trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "
                                                           "fcnet_activation": "relu"}})
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
+# Train the model
 checkpoint_path = None
 for e in range(20):
     print(trainer.train())
@@ -32,6 +34,7 @@ for e in range(20):
     print(f"Epoch: {e} -- Efficiency: {efficiency}")
 
 
+# Play the environment with a visualisation
 #trainer.restore(checkpoint_path)
 for e in range(10):
     obs = env.reset()
