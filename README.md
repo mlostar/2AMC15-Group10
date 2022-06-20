@@ -7,9 +7,9 @@ pip install -r requirements.txt
 ```
 
 ## Running visual agents
-Run the visualization of a3c agent.
+Run the visualization of sac agent.
 ```
-python a3c_visual.py
+python sac_visual.py
 ```
 
 Run the visualization of ppo agent.
@@ -20,10 +20,10 @@ python ppo_visual.py
 ## Hyperparameter tuning
 For the hyper parameter Ray Tune is used.
 
-### Without Ray cluster
-Run the a3c tuning.
+### Running hyperparameter tuning
+Run the sac tuning.
 ```
-python a3c_tune.py
+python sac_tune.py
 ```
 
 Run the ppo tuning.
