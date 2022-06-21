@@ -16,12 +16,15 @@ robot = Robot(init_position=(0, 8))
 # Initialise the trainer and the environment
 trainer = PPOTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                 "num_workers": 0,
-                                                # "gamma": 0.830490,
-                                                # "lr": 0.023585,
                                                 "horizon": 300,
                                                 "grad_clip": 4.0,
-                                                "model": {"fcnet_hiddens": [256],
-                                                          "fcnet_activation": "relu"}})
+                                                "model": {"fcnet_hiddens": [128],
+                                                          "fcnet_activation": "relu"},
+                                                 "lambda": 0.5057780,
+                                                "sgd_minibatch_size": 32,
+                                                "lr": 0.0007080,
+                                                "kl_coeff": 0.17158168,
+                                                "kl_target": 0.0033400})
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
 # Train the model

@@ -9,15 +9,25 @@ from helper.evaluation import get_cleaning_efficiency
 from helper.utils.parsing import parse_config
 
 parent_path = Path(".").resolve().parent
-grid = parse_config(Path(".").parent/"assets"/"simple.grid")
+grid = parse_config(Path(".").parent/"assets"/"complex_p_dirt.grid")
 robot = Robot(init_position=(0, 8))
 
 
 # Initialise the trainer and the environment
 trainer = SACTrainer(env=FloorCleaning, config={"env_config": {"robot": robot, "grid": grid},
                                                 # Learning rate
-                                                "lr": 0.0001,
-                                                "learning_starts": 150})
+                                                "lr": 3.13E-05,
+                                                "learning_starts": 150,
+                                                "optimization": {
+                                                    "actor_learning_rate": 0.0002188,
+                                                    "critic_learning_rate": 0.0016225,
+                                                    "entropy_learning_rate": 0.0009927,
+                                                },
+                                                "initial_alpha": 0.9995141,
+                                                "tau": 0.0290980,
+                                                "twin_q": False
+
+                                                })
 
 env = FloorCleaning(dict(robot=robot, grid=grid))
 
